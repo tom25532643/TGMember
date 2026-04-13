@@ -9,6 +9,8 @@ from schemas import (
     GroupCreate,
     TagCreate,
     NoteCreate,
+    MessageLog,
+    MessageLogCreate,
 )
 import crud
 import models
@@ -113,3 +115,29 @@ def add_member_note(member_id: int, payload: NoteCreate, db: Session = Depends(g
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     return crud.add_note_to_member(db, member_id, payload.note)
+
+@app.get("/members/{member_id}/message-logs", response_model=list[MessageLog])
+def get_member_message_logs(member_id: int, db: Session = Depends(get_db)):
+    member = crud.get_member_by_id(db, member_id)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return crud.list_member_message_logs(db, member_id)
+
+
+@app.post("/members/{member_id}/message-logs", response_model=MessageLog)
+def create_member_message_log(
+    member_id: int,
+    payload: MessageLogCreate,
+    db: Session = Depends(get_db),
+):
+    member = crud.get_member_by_id(db, member_id)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    return crud.create_message_log(
+        db,
+        member_id=member_id,
+        direction=payload.direction,
+        content=payload.content,
+        status=payload.status,
+    )

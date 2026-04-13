@@ -5,6 +5,7 @@ from models import (
     GroupMemberModel,
     MemberTagModel,
     MemberNoteModel,
+    MessageLogModel,
 )
 
 
@@ -97,3 +98,23 @@ def add_note_to_member(db: Session, member_id: int, note: str):
     db.add(row)
     db.commit()
     return list_member_notes(db, member_id)
+
+def list_member_message_logs(db: Session, member_id: int):
+    return (
+        db.query(MessageLogModel)
+        .filter(MessageLogModel.member_id == member_id)
+        .all()
+    )
+
+
+def create_message_log(db: Session, member_id: int, direction: str, content: str, status: str):
+    row = MessageLogModel(
+        member_id=member_id,
+        direction=direction,
+        content=content,
+        status=status,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row

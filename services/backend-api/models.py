@@ -47,3 +47,13 @@ class MemberNoteModel(Base):
     id = Column(Integer, primary_key=True, index=True)
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     note = Column(String, nullable=False)
+
+
+class MessageLogModel(Base):
+    __tablename__ = "message_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
+    direction = Column(String, nullable=False)   # outbound / inbound
+    content = Column(String, nullable=False)
+    status = Column(String, nullable=False)      # sent / failed / received

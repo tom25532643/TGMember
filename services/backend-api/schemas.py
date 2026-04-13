@@ -33,3 +33,19 @@ class TagCreate(BaseModel):
 
 class NoteCreate(BaseModel):
     note: str
+
+class MessageLog(BaseModel):
+    id: int
+    member_id: int
+    direction: str
+    content: str
+    status: str
+
+    class Config:
+        from_attributes = True
+
+
+class MessageLogCreate(BaseModel):
+    direction: str
+    content: str
+    status: str
