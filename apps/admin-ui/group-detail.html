@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TGMember - Group Detail</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      max-width: 960px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    input, button {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    .error {
+      color: #b00020;
+      margin-top: 10px;
+    }
+
+    .success {
+      color: #0a7a2f;
+      margin-top: 10px;
+    }
+
+    .muted {
+      color: #666;
+    }
+
+    a {
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <p>
+    <a href="./groups.html">← Back to Groups</a>
+  </p>
+
+  <div class="card">
+    <h1>Group Detail</h1>
+    <div id="group-basic"></div>
+    <div id="group-error" class="error"></div>
+  </div>
+
+  <div class="card">
+    <h2>Members</h2>
+    <ul id="group-members-list"></ul>
+
+    <form id="add-member-form">
+      <input id="member-id-input" type="number" placeholder="Member ID" required />
+      <button type="submit">Add Member</button>
+    </form>
+    <div id="add-member-message"></div>
+  </div>
+
+  <script type="module">
+    import { getGroups, getGroupMembers, addMemberToGroup } from "./js/api.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const groupId = params.get("id");
+
+    const groupBasic = document.getElementById("group-basic");
+    const groupError = document.getElementById("group-error");
+    const groupMembersList = document.getElementById("group-members-list");
+    const addMemberForm = document.getElementById("add-member-form");
+    const memberIdInput = document.getElementById("member-id-input");
+    const addMemberMessage = document.getElementById("add-member-message");
+
+    function renderMembers(members) {
+      groupMembersList.innerHTML = "";
+
+      if (!members.length) {
+        const li = document.createElement("li");
+        li.className = "muted";
+        li.textContent = "No members";
+        groupMembersList.appendChild(li);
+        return;
+      }
+
+      for (const member of members) {
+        const li = document.createElement("li");
+        li.textContent = `${member.id} - ${member.name} (${member.username})`;
+        groupMembersList.appendChild(li);
+      }
+    }
+
+    async function loadGroup() {
+      if (!groupId) {
+        groupError.textContent = "Missing group id.";
+        return;
+      }
+
+      groupError.textContent = "";
+
+      try {
+        const groups = await getGroups();
+        const group = groups.find(g => String(g.id) === String(groupId));
+
+        if (!group) {
+          groupError.textContent = "Group not found.";
+          return;
+        }
+
+        groupBasic.innerHTML = `
+          <p><strong>ID:</strong> ${group.id}</p>
+          <p><strong>Name:</strong> ${group.name}</p>
+        `;
+      } catch (error) {
+        groupError.textContent = `Failed to load group: ${error.message}`;
+      }
+    }
+
+    async function loadGroupMembers() {
+      try {
+        const members = await getGroupMembers(groupId);
+        renderMembers(members);
+      } catch (error) {
+        addMemberMessage.textContent = `Failed to load group members: ${error.message}`;
+        addMemberMessage.className = "error";
+      }
+    }
+
+    addMemberForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      addMemberMessage.textContent = "";
+      addMemberMessage.className = "";
+
+      try {
+        await addMemberToGroup(groupId, memberIdInput.value);
+        addMemberForm.reset();
+        addMemberMessage.textContent = "Member added to group.";
+        addMemberMessage.className = "success";
+        await loadGroupMembers();
+      } catch (error) {
+        addMemberMessage.textContent = `Failed to add member: ${error.message}`;
+        addMemberMessage.className = "error";
+      }
+    });
+
+    async function init() {
+      await loadGroup();
+      await loadGroupMembers();
+    }
+
+    init();
+  </script>
+</body>
+</html>

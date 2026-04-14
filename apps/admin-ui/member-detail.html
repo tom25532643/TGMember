@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TGMember - Member Detail</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      max-width: 960px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    input, button, select {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    .error {
+      color: #b00020;
+      margin-top: 10px;
+    }
+
+    .success {
+      color: #0a7a2f;
+      margin-top: 10px;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    .muted {
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <p><a href="./members.html">← Back to Members</a></p>
+
+  <div class="card">
+    <h1>Member Detail</h1>
+    <div id="member-basic"></div>
+    <div id="member-error" class="error"></div>
+  </div>
+
+  <div class="card">
+    <h2>Tags</h2>
+    <ul id="tags-list"></ul>
+    <form id="tag-form">
+      <input id="tag-input" type="text" placeholder="New tag" required />
+      <button type="submit">Add Tag</button>
+    </form>
+    <div id="tag-message"></div>
+  </div>
+
+  <div class="card">
+    <h2>Notes</h2>
+    <ul id="notes-list"></ul>
+    <form id="note-form">
+      <input id="note-input" type="text" placeholder="New note" required />
+      <button type="submit">Add Note</button>
+    </form>
+    <div id="note-message"></div>
+  </div>
+
+  <div class="card">
+    <h2>Message Logs</h2>
+    <ul id="logs-list"></ul>
+    <form id="log-form">
+      <select id="log-direction" required>
+        <option value="outbound">outbound</option>
+        <option value="inbound">inbound</option>
+      </select>
+      <input id="log-content" type="text" placeholder="Message content" required />
+      <select id="log-status" required>
+        <option value="sent">sent</option>
+        <option value="received">received</option>
+        <option value="failed">failed</option>
+      </select>
+      <button type="submit">Add Log</button>
+    </form>
+    <div id="log-message"></div>
+  </div>
+
+  <script type="module" src="./js/member-detail.js"></script>
+</body>
+</html>

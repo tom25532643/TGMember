@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TGMember - Groups</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      max-width: 960px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    input, button {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 8px;
+      text-align: left;
+    }
+
+    .error {
+      color: #b00020;
+      margin-top: 10px;
+    }
+
+    .success {
+      color: #0a7a2f;
+      margin-top: 10px;
+    }
+
+    a {
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>TGMember - Groups</h1>
+  <p>
+    <a href="./members.html">Members</a>
+  </p>
+
+  <div class="card">
+    <h2>Create Group</h2>
+    <form id="create-group-form">
+      <input id="group-name" type="text" placeholder="Group name" required />
+      <button type="submit">Create</button>
+    </form>
+    <div id="create-group-message"></div>
+  </div>
+
+  <div class="card">
+    <h2>Groups</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="groups-table-body"></tbody>
+    </table>
+    <div id="groups-error" class="error"></div>
+  </div>
+
+  <script type="module" src="./js/groups.js"></script>
+</body>
+</html>
