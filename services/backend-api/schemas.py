@@ -49,3 +49,15 @@ class MessageLogCreate(BaseModel):
     direction: str
     content: str
     status: str
+
+class SendMessageRequest(BaseModel):
+    content: str
+
+
+class SendMessageResponse(BaseModel):
+    status: str
+    service: str
+    action: str
+    member_id: int
+    content: str
+    result: str

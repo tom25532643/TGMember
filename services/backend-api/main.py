@@ -12,9 +12,12 @@ from schemas import (
     NoteCreate,
     MessageLog,
     MessageLogCreate,
+    SendMessageRequest,
+    SendMessageResponse,
 )
 import crud
 import models
+import requests
 
 app = FastAPI()
 
@@ -150,3 +153,30 @@ def create_member_message_log(
         content=payload.content,
         status=payload.status,
     )
+
+@app.post("/members/{member_id}/send-message", response_model=SendMessageResponse)
+def send_message_to_member(
+    member_id: int,
+    payload: SendMessageRequest,
+    db: Session = Depends(get_db),
+):
+    member = crud.get_member_by_id(db, member_id)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    try:
+        response = requests.post(
+            "http://127.0.0.1:8010/messages/send",
+            json={
+                "member_id": member_id,
+                "content": payload.content,
+            },
+            timeout=5,
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to call tdlib-service: {error}",
+        )
