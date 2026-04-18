@@ -1,4 +1,5 @@
 import asyncio
+import time
 from email import message
 import json
 import os
@@ -579,6 +580,232 @@ class TdAuthSession:
             }
             for chat in matched
         ]
+
+    def get_group_chats(self, limit: int = 100) -> list[dict]:
+        chats = self.get_chats(limit=limit)
+        return [
+            c for c in chats
+            if c.get('type') in ['chatTypeBasicGroup', 'chatTypeSupergroup']
+        ]
+    
+    def get_supergroups(self, limit: int = 100) -> list[dict]:
+        chats = self.get_chats(limit=limit)
+        result = []
+
+        for c in chats:
+            if c.get('type') == 'chatTypeSupergroup':
+                chat_id = c.get('id')
+
+                # 取 full chat（為了拿 supergroup_id / is_channel）
+                try:
+                    full_chat = self.client.request({
+                        '@type': 'getChat',
+                        'chat_id': chat_id
+                    }, timeout=10)
+                except Exception:
+                    continue
+
+                chat_type = full_chat.get('type', {})
+                if chat_type.get('@type') != 'chatTypeSupergroup':
+                    continue
+
+                result.append({
+                    'chat_id': chat_id,
+                    'title': full_chat.get('title'),
+                    'supergroup_id': chat_type.get('supergroup_id'),
+                    'is_channel': bool(chat_type.get('is_channel')),
+                })
+
+        return result
+    
+    def get_supergroup_members_preview(self, chat_id: int, limit: int = 200) -> dict:
+        return self.get_all_supergroup_members(
+            chat_id=chat_id,
+            max_pages=1,
+            page_size=limit
+        )
+    
+    def get_all_supergroup_members(self, chat_id: int, max_pages: int = 10, page_size: int = 200) -> dict:
+        """
+        抓取指定 supergroup / channel 的所有可取得 members（分頁）。
+        
+        chat_id: Telegram chat_id
+        max_pages: 最多抓幾頁，避免無限循環
+        page_size: 每頁大小，TDLib 單次上限通常為 200
+        """
+        if max_pages <= 0:
+            raise ValueError('max_pages must be > 0')
+
+        if page_size <= 0:
+            raise ValueError('page_size must be > 0')
+
+        if page_size > 200:
+            page_size = 200
+
+        # 先拿 chat → supergroup_id
+        full_chat = self.client.request({
+            '@type': 'getChat',
+            'chat_id': chat_id
+        }, timeout=10)
+
+        chat_type = full_chat.get('type', {})
+        if chat_type.get('@type') != 'chatTypeSupergroup':
+            raise ValueError('Not a supergroup')
+
+        supergroup_id = chat_type.get('supergroup_id')
+        is_channel = bool(chat_type.get('is_channel'))
+
+        all_members = []
+        seen_user_ids = set()
+
+        offset = 0
+        fetched_pages = 0
+
+        while fetched_pages < max_pages:
+            result = self.client.request({
+                '@type': 'getSupergroupMembers',
+                'supergroup_id': supergroup_id,
+                'filter': {
+                    '@type': 'supergroupMembersFilterRecent'
+                },
+                'offset': offset,
+                'limit': page_size
+            }, timeout=20)
+
+            print({
+                "@type": "getSupergroupMembers",
+                "supergroup_id": supergroup_id,
+                "filter": {"@type": "supergroupMembersFilterRecent"},
+                "offset": offset,
+                "limit": page_size,
+            })
+
+            members = result.get('members', []) or []
+            if not members:
+                break
+
+            print(f"offset={offset}, count={len(members)}")
+            print([((m.get('member_id') or {}).get('user_id')) for m in members[:10]])
+            print([((m.get('member_id') or {}).get('user_id')) for m in members[:10]])
+            print([((m.get('member_id') or {}).get('user_id')) for m in members[-10:]])
+
+            page_added = 0
+
+            for m in members:
+                member_id = m.get('member_id') or {}
+                user_id = member_id.get('user_id')
+                status = (m.get('status') or {}).get('@type')
+
+                # 某些 member 可能不是 user，先跳過
+                if not user_id:
+                    continue
+
+                if user_id in seen_user_ids:
+                    continue
+
+                seen_user_ids.add(user_id)
+                all_members.append({
+                    'user_id': user_id,
+                    'status': status,
+                })
+                page_added += 1
+
+            fetched_pages += 1
+
+            # 如果這頁回傳數量不足 page_size，通常代表到底了
+            if len(members) < page_size:
+                break
+
+            # 下一頁 offset 往後推
+            offset += len(members)
+
+            # 保險：如果這頁完全沒新增，避免奇怪情況卡住
+            if page_added == 0:
+                break
+
+        return {
+            'chat_id': chat_id,
+            'title': full_chat.get('title'),
+            'supergroup_id': supergroup_id,
+            'is_channel': is_channel,
+            'total': len(all_members),
+            'page_size': page_size,
+            'pages_fetched': fetched_pages,
+            'members': all_members,
+        }
+    
+    def send_to_members(self, chat_id: int, text: str, max_count: int = 50):
+        """
+        對指定 supergroup / channel 的 members 逐一發送私訊
+        """
+
+        # 1. 先拿 members（用你已經寫好的 function）
+        data = self.get_all_supergroup_members(chat_id=chat_id, max_pages=5)
+
+        members = data.get("members", [])
+        if not members:
+            return {
+                "ok": False,
+                "error": "no members"
+            }
+
+        success = 0
+        failed = 0
+        results = []
+
+        # 2. 限制數量（避免被 ban）
+        targets = members[:max_count]
+
+        for m in targets:
+            user_id = m.get("user_id")
+
+            try:
+                # 3. 建立 private chat
+                chat = self.client.request({
+                    "@type": "createPrivateChat",
+                    "user_id": user_id,
+                    "force": True
+                }, timeout=10)
+
+                private_chat_id = chat.get("id")
+
+                # 4. 發送訊息
+                self.client.request({
+                    "@type": "sendMessage",
+                    "chat_id": private_chat_id,
+                    "input_message_content": {
+                        "@type": "inputMessageText",
+                        "text": {
+                            "@type": "formattedText",
+                            "text": text
+                        }
+                    }
+                }, timeout=10)
+
+                success += 1
+                results.append({
+                    "user_id": user_id,
+                    "status": "ok"
+                })
+
+                # ⚠️ 避免 Telegram 封鎖（超重要）
+                time.sleep(0.5)
+
+            except Exception as e:
+                failed += 1
+                results.append({
+                    "user_id": user_id,
+                    "status": "failed",
+                    "error": str(e)
+                })
+
+        return {
+            "ok": True,
+            "total": len(targets),
+            "success": success,
+            "failed": failed,
+            "results": results
+        }
 
     def get_folder_chats_preview(self, folder_id: int, exclude_types: Optional[list[str]] = None) -> dict:
         """

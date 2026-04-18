@@ -10,6 +10,7 @@ import app.state as app_state
 from app.state import session_manager
 from app.routes import folder
 from app.routes import group
+from app.routes import supergroup
 
 
 app = FastAPI(title=APP_TITLE)
@@ -44,3 +45,4 @@ app.include_router(chat_router)
 app.include_router(ws_router)
 app.include_router(folder.router)
 app.include_router(group.router)
+app.include_router(supergroup.router)
