@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>盒子發送</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+    }
+
+    .topbar {
+      padding: 12px 20px;
+      border-bottom: 1px solid #ddd;
+      background: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .topbar button {
+      padding: 8px 16px;
+      background: #1677ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .section h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 16px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .form-group select,
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-right: 8px;
+      width: auto;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .button-group button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: #1677ff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0960ca;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: #1677ff;
+      border: 1px solid #1677ff;
+    }
+
+    .btn-secondary:hover {
+      background: #f5f5f5;
+    }
+
+    .btn-danger {
+      background: #ff4d4f;
+      color: white;
+    }
+
+    .preview-list {
+      margin-top: 16px;
+    }
+
+    .chat-item {
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-info {
+      flex: 1;
+    }
+
+    .chat-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .chat-type {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-included {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-excluded {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1677ff;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+    }
+
+    .error {
+      background: #fff2e8;
+      border: 1px solid #ffbb96;
+      color: #d4380d;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .success {
+      background: #f6ffed;
+      border: 1px solid #b7eb8f;
+      color: #274a00;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .results-table th {
+      background: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .results-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    .results-table tr:hover {
+      background: #fafafa;
+    }
+
+    .result-ok {
+      color: #22863a;
+      font-weight: 500;
+    }
+
+    .result-failed {
+      color: #cb2431;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>📦 盒子發送</h1>
+    <button onclick="goIndex()">← 返回</button>
+  </div>
+
+  <div class="container">
+    <!-- 配置區 -->
+    <div class="section">
+      <h2>發送設定</h2>
+      <div id="error-message"></div>
+
+      <div class="form-group">
+        <label>成員 ID <span style="color: #999; font-size: 12px;">(對應 Login 時的 User ID)</span></label>
+        <input type="number" id="memberId" placeholder="例: 1" />
+      </div>
+
+      <div class="form-group">
+        <label>盒子</label>
+        <select id="folderId">
+          <option value="">-- 選擇盒子 --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>排除的聊天類型</label>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" value="chatTypeChannel" class="exclude-type" /> 頻道
+          </label>
+          <label>
+            <input type="checkbox" value="chatTypeBasicGroup" class="exclude-type" /> 基本群組
+          </label>
+          <label>
+            <input type="checkbox" value="chatTypeSupergroup" class="exclude-type" /> 超級群組
+          </label>
+          <label>
+            <input type="checkbox" value="chatTypePrivate" class="exclude-type" /> 私聊
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>發送內容</label>
+        <textarea id="messageText" placeholder="輸入要發送的訊息..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="retryFailed" checked /> 失敗時自動重試
+        </label>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-secondary" onclick="previewFolderChats()">預覽名單</button>
+        <button class="btn-primary" onclick="sendToFolder()">開始發送</button>
+      </div>
+    </div>
+
+    <!-- 預覽區 -->
+    <div class="section" id="preview-section" style="display: none;">
+      <h2>預覽</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">總聊天數</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-included">0</div>
+          <div class="stat-label">將發送</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-excluded">0</div>
+          <div class="stat-label">已排除</div>
+        </div>
+      </div>
+
+      <div class="preview-list" id="preview-list"></div>
+    </div>
+
+    <!-- 結果區 -->
+    <div class="section" id="result-section" style="display: none;">
+      <h2>發送結果</h2>
+      <div id="result-message"></div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="result-total">0</div>
+          <div class="stat-label">總計</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="result-success">0</div>
+          <div class="stat-label">成功</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="result-failed">0</div>
+          <div class="stat-label">失敗</div>
+        </div>
+      </div>
+
+      <table class="results-table" id="results-table"></table>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://127.0.0.1:8000';
+
+    function goIndex() {
+      window.location.replace('index.html');
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-message');
+      el.innerHTML = `<div class="error">${escapeHtml(msg)}</div>`;
+    }
+
+    function clearError() {
+      document.getElementById('error-message').innerHTML = '';
+    }
+
+    function normalizeFolderName(folder) {
+      const defaultName = `Folder ${folder?.id ?? ''}`;
+      const rawName = folder?.name;
+
+      function normalize(raw) {
+        if (typeof raw === 'string') {
+          const trimmed = raw.trim();
+          if (!trimmed) {
+            return '';
+          }
+
+          if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+            try {
+              return normalize(JSON.parse(trimmed));
+            } catch (_err) {
+              return trimmed;
+            }
+          }
+
+          return trimmed;
+        }
+
+        if (Array.isArray(raw)) {
+          for (const item of raw) {
+            const normalized = normalize(item);
+            if (normalized) {
+              return normalized;
+            }
+          }
+          return '';
+        }
+
+        if (raw && typeof raw === 'object') {
+          if (raw['@type'] === 'chatFolderName') {
+            return normalize(raw.text);
+          }
+
+          if (raw['@type'] === 'text') {
+            return normalize(raw.text);
+          }
+
+          if (raw['@type'] === 'formattedText') {
+            return normalize(raw.text);
+          }
+
+          const keys = ['name', 'title', 'text', 'label', 'value', 'chat_folder_name', 'folder_name'];
+          for (const key of keys) {
+            if (key in raw) {
+              const normalized = normalize(raw[key]);
+              if (normalized) {
+                return normalized;
+              }
+            }
+          }
+
+          for (const value of Object.values(raw)) {
+            const normalized = normalize(value);
+            if (normalized) {
+              return normalized;
+            }
+          }
+        }
+
+        return '';
+      }
+
+      let normalizedName = normalize(rawName);
+      if (!normalizedName) {
+        normalizedName = normalize(folder);
+      }
+      return normalizedName || defaultName;
+    }
+
+    async function loadFolders() {
+      clearError();
+      const memberId = document.getElementById('memberId').value.trim();
+      if (!memberId) {
+        showError('請輸入成員 ID');
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${API_BASE}/folders/${memberId}`);
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        console.log('Folders data:', data); // 調試用
+        
+        if (!data.ok) {
+          throw new Error(data.detail || 'API error');
+        }
+
+        const folders = data.data || [];
+        console.log('Parsed folders:', folders); // 調試用
+        
+        if (!Array.isArray(folders)) {
+          throw new Error('API 返回的數據格式不正確');
+        }
+
+        const sel = document.getElementById('folderId');
+        sel.innerHTML = '<option value="">-- 選擇盒子 --</option>';
+        
+        folders.forEach((f) => {
+          console.log('Processing folder:', f); // 調試用
+          
+          const opt = document.createElement('option');
+          opt.value = String(f.id || '');
+          opt.textContent = normalizeFolderName(f);
+          sel.appendChild(opt);
+        });
+
+        if (folders.length === 0) {
+          showError('該成員沒有建立任何盒子');
+        } else {
+          console.log(`成功載入 ${folders.length} 個盒子`);
+        }
+      } catch (err) {
+        console.error('Error loading folders:', err); // 調試用
+        showError(`載入盒子失敗: ${err.message}`);
+      }
+    }
+
+    async function previewFolderChats() {
+      clearError();
+      const memberId = document.getElementById('memberId').value.trim();
+      const folderId = document.getElementById('folderId').value.trim();
+
+      if (!memberId || !folderId) {
+        showError('請選擇成員和盒子');
+        return;
+      }
+
+      const excludeTypes = Array.from(document.querySelectorAll('.exclude-type:checked')).map(
+        (el) => el.value
+      );
+
+      try {
+        const resp = await fetch(`${API_BASE}/folders/${memberId}/${folderId}/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ exclude_types: excludeTypes }),
+        });
+
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        if (!data.ok) {
+          throw new Error(data.detail || 'API error');
+        }
+
+        const preview = data.data || {};
+        displayPreview(preview);
+      } catch (err) {
+        showError(`預覽失敗: ${err.message}`);
+      }
+    }
+
+    function displayPreview(preview) {
+      const total = preview.total || 0;
+      const included = preview.included || 0;
+      const excluded = preview.excluded || 0;
+      const chats = preview.chats || [];
+      const excludedChats = preview.excluded_chats || [];
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-included').textContent = included;
+      document.getElementById('stat-excluded').textContent = excluded;
+
+      let html = '';
+
+      if (chats.length > 0) {
+        html += '<h3 style="margin-top:16px; margin-bottom:8px;">將發送（' + included + '）</h3>';
+        chats.forEach((c) => {
+          html += `
+            <div class="chat-item">
+              <div class="chat-info">
+                <div class="chat-title">${escapeHtml(c.title || 'Chat ' + c.chat_id)}</div>
+                <div class="chat-type">${escapeHtml(c.type || '-')}</div>
+              </div>
+              <span class="status-badge status-included">✓ 發送</span>
+            </div>
+          `;
+        });
+      }
+
+      if (excludedChats.length > 0) {
+        html += '<h3 style="margin-top:16px; margin-bottom:8px;">已排除（' + excluded + '）</h3>';
+        excludedChats.forEach((c) => {
+          html += `
+            <div class="chat-item">
+              <div class="chat-info">
+                <div class="chat-title">${escapeHtml(c.title || 'Chat ' + c.chat_id)}</div>
+                <div class="chat-type">${escapeHtml(c.type || '-')}</div>
+              </div>
+              <span class="status-badge status-excluded">✕ 排除</span>
+            </div>
+          `;
+        });
+      }
+
+      document.getElementById('preview-list').innerHTML = html;
+      document.getElementById('preview-section').style.display = 'block';
+      document.getElementById('result-section').style.display = 'none';
+    }
+
+    async function sendToFolder() {
+      clearError();
+      const memberId = document.getElementById('memberId').value.trim();
+      const folderId = document.getElementById('folderId').value.trim();
+      const text = document.getElementById('messageText').value.trim();
+      const retryFailed = document.getElementById('retryFailed').checked;
+
+      if (!memberId || !folderId) {
+        showError('請選擇成員和盒子');
+        return;
+      }
+
+      if (!text) {
+        showError('請輸入發送內容');
+        return;
+      }
+
+      const excludeTypes = Array.from(document.querySelectorAll('.exclude-type:checked')).map(
+        (el) => el.value
+      );
+
+      try {
+        const resp = await fetch(`${API_BASE}/folders/${memberId}/${folderId}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, exclude_types: excludeTypes, retry_failed: retryFailed }),
+        });
+
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        if (!data.ok) {
+          throw new Error(data.detail || 'API error');
+        }
+
+        displayResults(data.data || {});
+      } catch (err) {
+        showError(`發送失敗: ${err.message}`);
+      }
+    }
+
+    function displayResults(result) {
+      const total = result.total || 0;
+      const success = result.success || 0;
+      const failed = result.failed || 0;
+      const results = result.results || [];
+
+      document.getElementById('result-total').textContent = total;
+      document.getElementById('result-success').textContent = success;
+      document.getElementById('result-failed').textContent = failed;
+
+      const tableHtml = [
+        '<thead><tr><th>聊天</th><th>類型</th><th>狀態</th><th>備註</th></tr></thead>',
+        '<tbody>',
+        ...results.map((r) => {
+          const status = r.ok ? '<span class="result-ok">✓ 成功</span>' : '<span class="result-failed">✕ 失敗</span>';
+          const remark = r.error ? escapeHtml(r.error) : r.retry_ok ? '重試成功' : '';
+          return `
+            <tr>
+              <td>${escapeHtml(r.title || 'Chat ' + r.chat_id)}</td>
+              <td>${escapeHtml(r.type || '-')}</td>
+              <td>${status}</td>
+              <td>${remark}</td>
+            </tr>
+          `;
+        }),
+        '</tbody>',
+      ].join('');
+
+      document.getElementById('results-table').innerHTML = tableHtml;
+
+      const resultMsg = failed === 0
+        ? `<div class="success">✓ 已成功發送至 ${success} 個聊天</div>`
+        : `<div class="error">⚠ 成功 ${success} 個，失敗 ${failed} 個</div>`;
+
+      document.getElementById('result-message').innerHTML = resultMsg;
+      document.getElementById('result-section').style.display = 'block';
+      document.getElementById('preview-section').style.display = 'none';
+    }
+
+    // 初始化
+    document.getElementById('memberId').addEventListener('change', loadFolders);
+  </script>
+</body>
+</html>

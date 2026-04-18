@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+</head>
+<body>
+
+<h2>Telegram Login</h2>
+
+<div>
+  <label>User ID:</label>
+  <input id="userId" value="1" />
+</div>
+
+<div>
+  <label>Phone:</label>
+  <input id="phone" placeholder="+886..." />
+</div>
+
+<div>
+  <label>Code:</label>
+  <input id="code" />
+</div>
+
+<div>
+  <label>Password:</label>
+  <input id="password" type="password" />
+</div>
+
+<button onclick="start()">Start</button>
+<button onclick="sendPhone()">Send Phone</button>
+<button onclick="sendCode()">Send Code</button>
+<button onclick="sendPassword()">Send Password</button>
+
+<pre id="log"></pre>
+
+<script src="js/auth.js"></script>
+
+</body>
+</html>

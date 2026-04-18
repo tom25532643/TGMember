@@ -174,8 +174,28 @@ def send_message_to_member(
             timeout=5,
         )
         response.raise_for_status()
-        return response.json()
+
+        result = response.json()
+
+        crud.create_message_log(
+            db=db,
+            member_id=member_id,
+            direction="outbound",
+            content=payload.content,
+            status="sent",
+        )
+
+        return result
+
     except requests.RequestException as error:
+        crud.create_message_log(
+            db=db,
+            member_id=member_id,
+            direction="outbound",
+            content=payload.content,
+            status="failed",
+        )
+
         raise HTTPException(
             status_code=502,
             detail=f"Failed to call tdlib-service: {error}",

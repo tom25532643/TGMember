@@ -1,91 +1,69 @@
-const API_BASE = "http://127.0.0.1:8000";
+const TDLIB_BASE = "http://127.0.0.1:8000";
+const BACKEND_BASE = "http://127.0.0.1:8001"; // 這裡換成你的 backend-api port
 
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+async function httpJson(url, options = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
     ...options,
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `HTTP ${response.status}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(JSON.stringify(data));
   }
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  return response.json();
+  return data;
 }
 
-export async function getMembers() {
-  return request("/members");
-}
+window.tdlibApi = {
+  startAuth(userId) {
+    return httpJson(`${TDLIB_BASE}/auth/start`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
 
-export async function getMember(memberId) {
-  return request(`/members/${memberId}`);
-}
+  submitPhone(userId, phoneNumber) {
+    return httpJson(`${TDLIB_BASE}/auth/phone`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, phone_number: phoneNumber }),
+    });
+  },
 
-export async function createMember(payload) {
-  return request("/members", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
+  submitCode(userId, code) {
+    return httpJson(`${TDLIB_BASE}/auth/code`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, code }),
+    });
+  },
 
-export async function getMemberTags(memberId) {
-  return request(`/members/${memberId}/tags`);
-}
+  submitPassword(userId, password) {
+    return httpJson(`${TDLIB_BASE}/auth/password`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, password }),
+    });
+  },
 
-export async function addMemberTag(memberId, payload) {
-  return request(`/members/${memberId}/tags`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
+  getAuthState(userId) {
+    return httpJson(`${TDLIB_BASE}/auth/state/${encodeURIComponent(userId)}`);
+  },
 
-export async function getMemberNotes(memberId) {
-  return request(`/members/${memberId}/notes`);
-}
+  closeSession(userId) {
+    return httpJson(`${TDLIB_BASE}/auth/close/${encodeURIComponent(userId)}`, {
+      method: "POST",
+    });
+  },
 
-export async function addMemberNote(memberId, payload) {
-  return request(`/members/${memberId}/notes`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
+  getChats(userId, limit = 20) {
+    return httpJson(`${TDLIB_BASE}/chats/${encodeURIComponent(userId)}?limit=${limit}`);
+  },
+};
 
-export async function getMemberMessageLogs(memberId) {
-  return request(`/members/${memberId}/message-logs`);
-}
+window.backendApi = {
+  getMembers() {
+    return httpJson(`${BACKEND_BASE}/members`);
+  },
 
-export async function createMemberMessageLog(memberId, payload) {
-  return request(`/members/${memberId}/message-logs`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function getGroups() {
-  return request("/groups");
-}
-
-export async function createGroup(payload) {
-  return request("/groups", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function getGroupMembers(groupId) {
-  return request(`/groups/${groupId}/members`);
-}
-
-export async function addMemberToGroup(groupId, memberId) {
-  return request(`/groups/${groupId}/members/${memberId}`, {
-    method: "POST",
-  });
-}
+  getGroups() {
+    return httpJson(`${BACKEND_BASE}/groups`);
+  },
+};

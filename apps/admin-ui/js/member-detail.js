@@ -6,6 +6,7 @@ import {
   addMemberNote,
   getMemberMessageLogs,
   createMemberMessageLog,
+  sendMessageToMember,
 } from "./api.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -30,6 +31,10 @@ const logDirection = document.getElementById("log-direction");
 const logContent = document.getElementById("log-content");
 const logStatus = document.getElementById("log-status");
 const logMessage = document.getElementById("log-message");
+
+const sendMessageForm = document.getElementById("send-message-form");
+const sendMessageInput = document.getElementById("send-message-input");
+const sendMessageResult = document.getElementById("send-message-result");
 
 function renderList(container, items, emptyText) {
   container.innerHTML = "";
@@ -169,6 +174,29 @@ logForm.addEventListener("submit", async (event) => {
   } catch (error) {
     logMessage.textContent = `Failed to add message log: ${error.message}`;
     logMessage.className = "error";
+  }
+});
+
+sendMessageForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  sendMessageResult.textContent = "";
+  sendMessageResult.className = "";
+
+  try {
+    const result = await sendMessageToMember(memberId, {
+      content: sendMessageInput.value.trim(),
+    });
+
+    sendMessageForm.reset();
+    sendMessageResult.textContent = `Message sent: ${result.result}`;
+    sendMessageResult.className = "success";
+
+    await loadLogs();
+  } catch (error) {
+    sendMessageResult.textContent = `Failed to send message: ${error.message}`;
+    sendMessageResult.className = "error";
+
+    await loadLogs();
   }
 });
 
