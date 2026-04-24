@@ -460,54 +460,68 @@ class TdAuthSession:
             print(f'[USER {self.user_id}] close failed: {exc}')
         self.client.stop()
 
-    def _normalize_folder_name(self, raw_name: Any) -> str:
+    def _normalize_folder_name(self, raw_name):
+        if raw_name is None:
+            return ''
+
+        # string
         if isinstance(raw_name, str):
-            trimmed = raw_name.strip()
-            if not trimmed:
+            raw_name = raw_name.strip()
+            if not raw_name:
                 return ''
 
-            if ((trimmed.startswith('{') and trimmed.endswith('}'))
-                    or (trimmed.startswith('[') and trimmed.endswith(']'))):
+            # JSON string
+            if raw_name.startswith('{') and raw_name.endswith('}'):
                 try:
-                    parsed = json.loads(trimmed)
-                    return self._normalize_folder_name(parsed)
-                except (ValueError, TypeError):
-                    return trimmed
+                    return self._normalize_folder_name(json.loads(raw_name))
+                except Exception:
+                    return raw_name
 
-            return trimmed
+            return raw_name
 
+        # dict
         if isinstance(raw_name, dict):
-            if raw_name.get('@type') == 'chatFolderName':
+            t = raw_name.get('@type')
+
+            # chatFolderName
+            if t == 'chatFolderName':
+                return self._normalize_folder_name(
+                    raw_name.get('name') or raw_name.get('text')
+                )
+
+            # formattedText
+            if t == 'formattedText':
                 return self._normalize_folder_name(raw_name.get('text'))
 
-            if raw_name.get('@type') == 'text':
+            # text object
+            if t == 'text':
                 return self._normalize_folder_name(raw_name.get('text'))
 
-            if raw_name.get('@type') == 'formattedText':
-                return self._normalize_folder_name(raw_name.get('text'))
+            # 常見 key
+            for k in ('name', 'text', 'title', 'label', 'value'):
+                if k in raw_name:
+                    v = self._normalize_folder_name(raw_name[k])
+                    if v:
+                        return v
 
-            for key in ('name', 'title', 'text', 'label', 'value', 'chat_folder_name', 'folder_name'):
-                if key in raw_name:
-                    normalized = self._normalize_folder_name(raw_name.get(key))
-                    if normalized:
-                        return normalized
-
-            for value in raw_name.values():
-                normalized = self._normalize_folder_name(value)
-                if normalized:
-                    return normalized
+            # fallback：掃整個 dict
+            for v in raw_name.values():
+                name = self._normalize_folder_name(v)
+                if name:
+                    return name
 
             return ''
 
-        if isinstance(raw_name, (list, tuple)):
-            for item in raw_name:
-                normalized = self._normalize_folder_name(item)
-                if normalized:
-                    return normalized
+        # list
+        if isinstance(raw_name, list):
+            for v in raw_name:
+                name = self._normalize_folder_name(v)
+                if name:
+                    return name
             return ''
 
         return ''
-
+    
     def get_folders(self) -> list[dict]:
         with self._lock:
             folders = list(self._chat_folders)
@@ -734,77 +748,83 @@ class TdAuthSession:
             'members': all_members,
         }
     
-    def send_to_members(self, chat_id: int, text: str, max_count: int = 50):
+    def create_private_chat(self, user_id: int) -> dict:
         """
-        對指定 supergroup / channel 的 members 逐一發送私訊
+        建立或取得 private chat（DM）
         """
+        return self.client.request({
+            '@type': 'createPrivateChat',
+            'user_id': user_id,
+            'force': True,
+        }, timeout=20)
 
-        # 1. 先拿 members（用你已經寫好的 function）
-        data = self.get_all_supergroup_members(chat_id=chat_id, max_pages=5)
 
-        members = data.get("members", [])
-        if not members:
-            return {
-                "ok": False,
-                "error": "no members"
-            }
+    def send_to_members(self, chat_id: int, text: str, max_count: int = 10) -> dict:
+        """
+        對 supergroup / channel 成員逐一發送私訊
+        """
+        if not text or not text.strip():
+            raise ValueError('text required')
+
+        preview = self.get_all_supergroup_members(
+            chat_id=chat_id,
+            max_pages=5,
+            page_size=200,
+        )
+
+        members = preview.get('members', []) or []
+        targets = members[:max_count]
 
         success = 0
         failed = 0
         results = []
 
-        # 2. 限制數量（避免被 ban）
-        targets = members[:max_count]
-
         for m in targets:
-            user_id = m.get("user_id")
+            user_id = m.get('user_id')
+            status = m.get('status')
+
+            if not user_id:
+                failed += 1
+                results.append({
+                    'user_id': None,
+                    'ok': False,
+                    'error': 'missing user_id'
+                })
+                continue
 
             try:
-                # 3. 建立 private chat
-                chat = self.client.request({
-                    "@type": "createPrivateChat",
-                    "user_id": user_id,
-                    "force": True
-                }, timeout=10)
+                # 1. 建立 private chat
+                chat = self.create_private_chat(user_id)
+                private_chat_id = chat.get('id')
 
-                private_chat_id = chat.get("id")
+                if not private_chat_id:
+                    raise Exception('no private_chat_id')
 
-                # 4. 發送訊息
-                self.client.request({
-                    "@type": "sendMessage",
-                    "chat_id": private_chat_id,
-                    "input_message_content": {
-                        "@type": "inputMessageText",
-                        "text": {
-                            "@type": "formattedText",
-                            "text": text
-                        }
-                    }
-                }, timeout=10)
+                # 2. 發送訊息
+                self.send_text(chat_id=private_chat_id, text=text)
 
                 success += 1
                 results.append({
-                    "user_id": user_id,
-                    "status": "ok"
+                    'user_id': user_id,
+                    'ok': True,
+                    'private_chat_id': private_chat_id
                 })
-
-                # ⚠️ 避免 Telegram 封鎖（超重要）
-                time.sleep(0.5)
 
             except Exception as e:
                 failed += 1
                 results.append({
-                    "user_id": user_id,
-                    "status": "failed",
-                    "error": str(e)
+                    'user_id': user_id,
+                    'ok': False,
+                    'error': str(e)
                 })
 
         return {
-            "ok": True,
-            "total": len(targets),
-            "success": success,
-            "failed": failed,
-            "results": results
+            'source_chat_id': chat_id,
+            'source_title': preview.get('title'),
+            'targeted': len(targets),
+            'success': success,
+            'failed': failed,
+            'results': results
         }
 
     def get_folder_chats_preview(self, folder_id: int, exclude_types: Optional[list[str]] = None) -> dict:

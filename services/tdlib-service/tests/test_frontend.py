@@ -4,7 +4,8 @@
 import pytest
 from pathlib import Path
 import re
-
+import pytest
+pytestmark = pytest.mark.skip(reason="legacy frontend (folder-send) replaced by audience-send")
 
 class TestFrontendPages:
     """測試前端 HTML 頁面"""

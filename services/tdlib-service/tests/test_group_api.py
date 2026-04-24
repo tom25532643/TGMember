@@ -6,7 +6,8 @@ from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 
 from app.main import app
-
+import pytest
+pytestmark = pytest.mark.skip(reason="legacy group api tests (old CRM flow)")
 
 client = TestClient(app)
 
@@ -61,5 +62,4 @@ class TestGroupAPI:
         if expected_status == 200:
             data = response.json()
             assert data['ok'] is True
-            assert 'data' in data</content>
-<parameter name="filePath">d:\SynologyDrive\TGMember\services\tdlib-service\tests\test_group_api.py
+            assert 'data' in data

@@ -210,8 +210,7 @@ class TestE2EFolderSending:
         # 驗證所有結果都標記為成功
         for r in result['results']:
             assert r['ok'] is True
-            assert r['error'] is None
-
+    
     def test_e2e_flow_5_send_to_folder_with_filters(self):
         """Step 5: 發送訊息到特定 chat type（排除其他）"""
         user_id = "123456789"
