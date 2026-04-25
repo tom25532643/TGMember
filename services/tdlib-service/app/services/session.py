@@ -1025,6 +1025,17 @@ class TdAuthSession:
             'failed_detail': [{'chat_id': t['chat_id'], 'title': t.get('title'), 'error': err} for t, err in failed_chats],
         }
 
+    def download_file(self, file_id: int) -> dict:
+        result = self.client.request({
+            "@type": "downloadFile",
+            "file_id": int(file_id),
+            "priority": 32,
+            "offset": 0,
+            "limit": 0,
+            "synchronous": True,
+        }, timeout=120)
+
+        return result
 
 class TdSessionManager:
     def __init__(self):

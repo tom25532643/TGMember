@@ -12,6 +12,9 @@ from app.routes import folder
 from app.routes import group
 from app.routes import supergroup
 from app.state import ws_manager
+from app.routes import files
+
+
 
 
 app = FastAPI(title=APP_TITLE)
@@ -60,3 +63,4 @@ app.include_router(ws_router)
 app.include_router(folder.router)
 app.include_router(group.router)
 app.include_router(supergroup.router)
+app.include_router(files.router)

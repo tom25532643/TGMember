@@ -8,6 +8,7 @@ let messageStore = {};
 let loadingMessages = false;
 let loadingOlder = false;
 let hasMore = true;
+let oldestMessageId = null;
 
 const API_BASE = "http://127.0.0.1:8000";
 const WS_BASE = "ws://127.0.0.1:8000";
@@ -26,16 +27,50 @@ function formatTime(unixTs) {
 }
 
 function createMessageElement(msg) {
+  console.log("render msg json:", JSON.stringify(msg, null, 2));
   const isSelf = msg.is_outgoing === true;
   const cls = isSelf ? "self" : "other";
-  const text = escapeHtml(msg.text || `[${msg.content_type}]`);
 
   const div = document.createElement("div");
   div.className = `bubble ${cls}`;
   div.dataset.messageId = msg.id;
 
+  let contentHtml = "";
+
+  if (msg.media?.type === "photo") {
+    contentHtml += `
+    <img 
+      class="chat-photo"
+      src="${API_BASE}/files/${currentUserId}/${msg.media.file_id}"
+      loading="lazy"
+    />
+  `;
+
+    // caption
+    if (msg.text) {
+      contentHtml += `<div>${escapeHtml(msg.text)}</div>`;
+    }
+  } else if (msg.media?.type === "video") {
+    contentHtml += `
+    <video 
+      class="chat-video"
+      src="${API_BASE}/files/${currentUserId}/${msg.media.file_id}"
+      controls
+      preload="metadata"
+    ></video>
+  `;
+
+    // caption
+    if (msg.text) {
+      contentHtml += `<div>${escapeHtml(msg.text)}</div>`;
+    }
+  } else {
+    // 🔥 純文字只顯示一次
+    contentHtml += `<div>${escapeHtml(msg.text || `[${msg.content_type}]`)}</div>`;
+  }
+
   div.innerHTML = `
-    <div>${text}</div>
+    ${contentHtml}
     <div class="meta">
       ${isSelf ? "Me" : msg.sender_id} · ${formatTime(msg.date)}
     </div>
@@ -134,9 +169,6 @@ async function loadMessages(userId, chatId, chatTitle = "") {
 
     renderInitial(messages);
 
-    // 2. 先 render 歷史
-    renderInitial(messages);
-
     // 3. 最後才開 WebSocket，避免初始化期間亂序
     connectWs(userId, chatId);
   } catch (err) {
@@ -147,9 +179,7 @@ async function loadMessages(userId, chatId, chatTitle = "") {
   }
 }
 
-async function loadOlderMessages() {
-  console.log("loadOlder triggered");
-
+async function loadOlder() {
   if (loadingOlder || loadingMessages || !hasMore) return;
 
   const key = String(currentChatId);
@@ -165,6 +195,8 @@ async function loadOlderMessages() {
   const oldest = current[0];
 
   try {
+    console.log("loadOlder triggered, from:", oldest.id);
+
     const res = await fetch(
       `${API_BASE}/messages/${currentUserId}/${currentChatId}?limit=50&from_message_id=${oldest.id}`,
     );
@@ -177,7 +209,13 @@ async function loadOlderMessages() {
       return;
     }
 
+    const beforeLength = current.length;
     const merged = mergeMessages(currentChatId, rawOlder);
+
+    if (merged.length === beforeLength) {
+      hasMore = false;
+      return;
+    }
 
     renderInitial(merged);
 
@@ -186,7 +224,7 @@ async function loadOlderMessages() {
 
     hasMore = rawOlder.length === 50;
   } catch (err) {
-    console.error("loadOlderMessages error:", err);
+    console.error("loadOlder error:", err);
   } finally {
     loadingOlder = false;
   }
@@ -336,7 +374,7 @@ async function init() {
   // 🔥 滑到頂自動載入
   box.addEventListener("scroll", () => {
     if (box.scrollTop <= 20) {
-      loadOlderMessages();
+      loadOlder();
     }
   });
 }
