@@ -1,9 +1,9 @@
 import asyncio
 import time
-from email import message
 import json
 import os
 import threading
+import random
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -108,10 +108,13 @@ class TdAuthSession:
 
     def _broadcast(self, user_id, payload):
         if self._broadcast_fn and self._loop:
-            asyncio.run_coroutine_threadsafe(
-                self._broadcast_fn(user_id, payload),
-                self._loop,
-            )
+            try:
+                asyncio.run_coroutine_threadsafe(
+                    self._broadcast_fn(user_id, payload),
+                    self._loop,
+                )
+            except Exception as e:
+                print(f"[WS ERROR] {e}")
 
     def _broadcast_chat(self, user_id, chat_id, payload):
         if self._broadcast_chat_fn and self._loop:
@@ -427,17 +430,36 @@ class TdAuthSession:
 
         return chats
 
-    def get_messages(self, chat_id: int, limit: int = 50) -> list[dict]:
+    def get_messages(self, chat_id: int, limit: int = 50, from_message_id: str | int = 0) -> list[dict]:
+        from_id = int(from_message_id or 0)
+
         result = self.client.request({
             '@type': 'getChatHistory',
             'chat_id': chat_id,
+            'from_message_id': from_id,
+            'offset': 0,
             'limit': limit,
             'only_local': False,
         }, timeout=30)
 
         messages = [parse_message(m) for m in result.get('messages', [])]
+
+        # 很重要：避免 JS Number 精度問題
+        for m in messages:
+            if 'id' in m:
+                m['id'] = str(m['id'])
+            if 'chat_id' in m:
+                m['chat_id'] = str(m['chat_id'])
+
         with self._lock:
-            self._message_cache[chat_id] = messages
+            if from_id == 0:
+                self._message_cache[chat_id] = messages
+            else:
+                self._message_cache.setdefault(chat_id, [])
+                existing_ids = {str(m.get('id')) for m in self._message_cache[chat_id]}
+                new_messages = [m for m in messages if str(m.get('id')) not in existing_ids]
+                self._message_cache[chat_id] = new_messages + self._message_cache[chat_id]
+
         return messages
 
     def send_text(self, chat_id: int, text: str) -> dict:
@@ -758,13 +780,14 @@ class TdAuthSession:
             'force': True,
         }, timeout=20)
 
-
     def send_to_members(self, chat_id: int, text: str, max_count: int = 10) -> dict:
         """
-        對 supergroup / channel 成員逐一發送私訊
+        對 supergroup / channel 成員逐一發送私訊，並透過 user-level WebSocket 回報進度。
         """
         if not text or not text.strip():
             raise ValueError('text required')
+
+        task_id = f"send_{int(time.time())}"
 
         preview = self.get_all_supergroup_members(
             chat_id=chat_id,
@@ -773,29 +796,60 @@ class TdAuthSession:
         )
 
         members = preview.get('members', []) or []
+        max_count = max(1, min(int(max_count), 100))
         targets = members[:max_count]
 
         success = 0
         failed = 0
         results = []
 
-        for m in targets:
+        self._broadcast(self.user_id, {
+            'event': 'send_start',
+            'task_id': task_id,
+            'source_chat_id': chat_id,
+            'source_title': preview.get('title'),
+            'total': len(targets),
+        })
+
+        for idx, m in enumerate(targets):
             user_id = m.get('user_id')
             status = m.get('status')
 
+            self._broadcast(self.user_id, {
+                'event': 'send_progress',
+                'task_id': task_id,
+                'source_chat_id': chat_id,
+                'current': idx + 1,
+                'total': len(targets),
+                'target_user_id': user_id,
+                'status': status,
+            })
+
             if not user_id:
                 failed += 1
-                results.append({
+                item = {
                     'user_id': None,
+                    'status': status,
                     'ok': False,
-                    'error': 'missing user_id'
+                    'error': 'missing user_id',
+                }
+                results.append(item)
+
+                self._broadcast(self.user_id, {
+                    'event': 'send_failed',
+                    'task_id': task_id,
+                    'source_chat_id': chat_id,
+                    'current': idx + 1,
+                    'total': len(targets),
+                    'target_user_id': None,
+                    'error': 'missing user_id',
                 })
                 continue
 
             try:
-                # 1. 建立 private chat
-                chat = self.create_private_chat(user_id)
-                private_chat_id = chat.get('id')
+                # 1. 建立或取得 private chat
+                private_chat = self.create_private_chat(user_id)
+                private_chat_id = private_chat.get('id')
 
                 if not private_chat_id:
                     raise Exception('no private_chat_id')
@@ -804,28 +858,73 @@ class TdAuthSession:
                 self.send_text(chat_id=private_chat_id, text=text)
 
                 success += 1
-                results.append({
+                item = {
                     'user_id': user_id,
+                    'status': status,
                     'ok': True,
-                    'private_chat_id': private_chat_id
+                    'private_chat_id': private_chat_id,
+                }
+                results.append(item)
+
+                self._broadcast(self.user_id, {
+                    'event': 'send_success',
+                    'task_id': task_id,
+                    'source_chat_id': chat_id,
+                    'current': idx + 1,
+                    'total': len(targets),
+                    'target_user_id': user_id,
+                    'private_chat_id': private_chat_id,
+                    'success': success,
+                    'failed': failed,
                 })
 
             except Exception as e:
                 failed += 1
-                results.append({
+                item = {
                     'user_id': user_id,
+                    'status': status,
                     'ok': False,
-                    'error': str(e)
+                    'error': str(e),
+                }
+                results.append(item)
+
+                self._broadcast(self.user_id, {
+                    'event': 'send_failed',
+                    'task_id': task_id,
+                    'source_chat_id': chat_id,
+                    'current': idx + 1,
+                    'total': len(targets),
+                    'target_user_id': user_id,
+                    'error': str(e),
+                    'success': success,
+                    'failed': failed,
                 })
 
-        return {
+            # Rate limit：每筆間隔 1 秒，不 retry
+            if idx < len(targets) - 1:
+                time.sleep(random.uniform(0.8, 1.2))
+
+        summary = {
+            'source_chat_id': chat_id,
+            'source_title': preview.get('title'),
+            'task_id': task_id,
+            'targeted': len(targets),
+            'success': success,
+            'failed': failed,
+            'results': results,
+        }
+
+        self._broadcast(self.user_id, {
+            'event': 'send_complete',
+            'task_id': task_id,
             'source_chat_id': chat_id,
             'source_title': preview.get('title'),
             'targeted': len(targets),
             'success': success,
             'failed': failed,
-            'results': results
-        }
+        })
+
+        return summary
 
     def get_folder_chats_preview(self, folder_id: int, exclude_types: Optional[list[str]] = None) -> dict:
         """
@@ -935,12 +1034,29 @@ class TdSessionManager:
     def get_or_create(self, user_id: str) -> TdAuthSession:
         with self._lock:
             if user_id not in self._sessions:
-                self._sessions[user_id] = TdAuthSession(
+                session = TdAuthSession(
                     user_id=user_id,
                     api_id=API_ID,
                     api_hash=API_HASH,
                     tdjson_path=None,
                 )
+
+                # 🔥 attach ws（避免新 session 沒綁）
+                try:
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+
+                from app.state import ws_manager
+                session.attach_broadcast(
+                    user_broadcast_fn=ws_manager.broadcast_to_user,
+                    chat_broadcast_fn=ws_manager.broadcast_to_chat,
+                    loop=loop,
+                )
+
+                self._sessions[user_id] = session
+
             return self._sessions[user_id]
 
     def get(self, user_id: str) -> Optional[TdAuthSession]:

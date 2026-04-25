@@ -10,10 +10,6 @@ class SendMembersRequest(BaseModel):
     text: str
     max_count: int = 10
 
-class SendMembersRequest(BaseModel):
-    text: str
-    max_count: int = 50
-
 router = APIRouter(prefix='/supergroups', tags=['supergroups'])
 
 
@@ -72,27 +68,6 @@ def send_to_members(user_id: str, chat_id: int, body: SendMembersRequest):
             chat_id=chat_id,
             text=body.text,
             max_count=body.max_count
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    return {
-        "ok": True,
-        "data": result
-    }
-
-@router.post('/{user_id}/{chat_id}/send')
-def send_members(user_id: str, chat_id: int, body: SendMembersRequest):
-    session = session_manager.get(user_id)
-
-    if not session:
-        raise HTTPException(status_code=404, detail='Session not found')
-
-    try:
-        result = session.send_to_members(
-            chat_id=chat_id,
-            text=body.text,
-            max_count=body.max_count,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -355,6 +355,8 @@
           <label for="userId">使用者 ID</label>
           <input type="number" id="userId" placeholder="例: 1" />
           <div class="helper-text">對應你登入 TDLib session 使用的 user_id。</div>
+          <label for="sendMaxCount">本次最多發送人數</label>
+          <input type="number" id="sendMaxCount" min="1" max="200" value="10" />
         </div>
 
         <div class="form-group">
@@ -424,6 +426,25 @@
 
       <div id="send-note" class="helper-text" style="margin-top:10px;">
         目前前端已對齊新的操作流程；若後端 send API 尚未完成，按下按鈕會先提示你。
+      </div>
+
+      <div class="progress-wrap" id="sendProgressBox" style="display:none;">
+        <div id="sendStatusText">尚未開始</div>
+
+        <div style="height:12px;background:#eee;border-radius:999px;overflow:hidden;margin:8px 0 12px;">
+          <div id="sendProgressFill" style="height:100%;width:0%;background:#1677ff;"></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="stat-value" id="send-current">0</div><div class="stat-label">Current</div></div>
+          <div class="stat"><div class="stat-value" id="send-total">0</div><div class="stat-label">Total</div></div>
+          <div class="stat"><div class="stat-value" id="send-success">0</div><div class="stat-label">Success</div></div>
+          <div class="stat"><div class="stat-value" id="send-failed">0</div><div class="stat-label">Failed</div></div>
+        </div>
+
+        <div id="sendLog" style="max-height:220px;overflow:auto;border:1px solid #eee;border-radius:6px;background:white;font-size:13px;">
+          <div class="placeholder">尚未有發送紀錄</div>
+        </div>
       </div>
     </div>
   </div>

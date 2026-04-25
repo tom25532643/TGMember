@@ -11,6 +11,7 @@ from app.state import session_manager
 from app.routes import folder
 from app.routes import group
 from app.routes import supergroup
+from app.state import ws_manager
 
 
 app = FastAPI(title=APP_TITLE)
@@ -26,10 +27,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+async def attach_ws_to_all_sessions():
+    loop = asyncio.get_running_loop()
+
+    for session in session_manager._sessions.values():
+        session.attach_broadcast(
+            user_broadcast_fn=ws_manager.broadcast_to_user,
+            chat_broadcast_fn=ws_manager.broadcast_to_chat,
+            loop=loop,
+        )
+
 
 @app.on_event("startup")
-def on_startup():
+async def on_startup():
     result = session_manager.restore_all_sessions()
+   
+    await attach_ws_to_all_sessions()
+
     print(
         f"[RESTORE] found={result['found']} "
         f"restored={len(result['restored'])} "
