@@ -739,11 +739,34 @@ class TdAuthSession:
                 if user_id in seen_user_ids:
                     continue
 
-                seen_user_ids.add(user_id)
+                # 🔥 取得 user profile
+                try:
+                    user = self.client.request({
+                        '@type': 'getUser',
+                        'user_id': user_id
+                    }, timeout=10)
+                except Exception:
+                    user = {}
+
+                first_name = user.get('first_name')
+                last_name = user.get('last_name')
+                username = user.get('username')
+
+                display_name = (
+                    f"{first_name or ''} {last_name or ''}".strip()
+                    or username
+                    or str(user_id)
+                )
+
                 all_members.append({
                     'user_id': user_id,
                     'status': status,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'username': username,
+                    'display_name': display_name,
                 })
+
                 page_added += 1
 
             fetched_pages += 1

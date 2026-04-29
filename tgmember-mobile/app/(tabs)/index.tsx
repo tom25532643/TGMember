@@ -9,257 +9,279 @@ import {
   View,
 } from "react-native";
 
-const CRM_BASE = "http://127.0.0.1:8001";
-const TDLIB_BASE = "http://127.0.0.1:8000";
+import { resolveScreen, Screen } from "../../auth/authMachine";
+import {
+  startSession,
+  sendPhone,
+  sendCode,
+  sendPassword,
+  loadSupergroups,
+  getAllMembers,
+  sendMessage,
+  getFolders,
+  getFolderChats,
+  sendFolder,
+} from "../../api/tdlib";
 
-type Screen =
-  | "checking"
-  | "login"
-  | "create_session"
-  | "phone"
-  | "code"
-  | "password"
-  | "home"
-  | "audience"
-  | "folder";
+import { storage, STORAGE_KEYS } from "../../api/storage";
 
 export default function IndexScreen() {
-  const [screen, setScreen] = useState<Screen>("login");
-  const [userId, setUserId] = useState("1");
+  const [screen, setScreen] = useState<Screen>("checking");
 
+  const [userId, setUserId] = useState("1");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
 
   const [groups, setGroups] = useState<any[]>([]);
-  const [folders, setFolders] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
-  const [selectedFolder, setSelectedFolder] = useState<any>(null);
-
-  const [text, setText] = useState("");
+  const [messageText, setMessageText] = useState("");
   const [maxCount, setMaxCount] = useState("1");
   const [logs, setLogs] = useState<string[]>([]);
 
-  const [errorMessage, setErrorMessage] = useState("");
+  const [folders, setFolders] = useState<any[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<any>(null);
+  const [folderChats, setFolderChats] = useState<any[]>([]);
 
-  const log = (msg: string) => setLogs((p) => [msg, ...p]);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<any>(null);
+  const [sendError, setSendError] = useState("");
+
+  const [folderLogs, setFolderLogs] = useState<string[]>([]);
+  const [folderSending, setFolderSending] = useState(false);
+  const [folderProgress, setFolderProgress] = useState({
+    current: 0,
+    total: 0,
+    success: 0,
+    failed: 0,
+    targetName: "",
+  });
+
+  const log = (msg: string) => setLogs((p) => [...p, msg]);
+  const flog = (msg: string) => setFolderLogs((p) => [...p, msg]);
+
+  async function run(
+    fn: () => Promise<void>,
+    fallbackScreen: Screen = "login",
+  ) {
+    try {
+      await fn();
+    } catch (e: any) {
+      console.error(e);
+      const msg = e?.message || "未知錯誤";
+      Alert.alert("錯誤", msg);
+      setScreen(fallbackScreen);
+    }
+  }
+
+  useEffect(() => {
+    async function restoreUser() {
+      const saved = await storage.getItem(STORAGE_KEYS.USER_ID);
+
+      if (!saved) {
+        setScreen("login");
+        return;
+      }
+
+      setUserId(saved);
+
+      await run(async () => {
+        const s = await resolveScreen(saved);
+        setScreen(s);
+      });
+    }
+
+    restoreUser();
+  }, []);
 
   async function login() {
-    try {
-      setErrorMessage("");
-      setScreen("checking");
+    await storage.setItem(STORAGE_KEYS.USER_ID, userId);
 
-      // 1. 先問 CRM / FastAPI：這個 member 是否存在
-      const memberRes = await fetch(`${CRM_BASE}/members/${userId}`);
+    setScreen("checking");
 
-      if (memberRes.status === 404) {
-        showError("無法登入", "找不到此帳號，請聯絡開發人員。");
-        setScreen("login");
-        return;
-      }
-
-      if (!memberRes.ok) {
-        showError("無法登入", "帳號檢查失敗，請聯絡開發人員。");
-        setScreen("login");
-        return;
-      }
-
-      const memberData = await memberRes.json();
-      console.log("member:", memberData);
-
-      // 2. member 存在，再問 TDLib 狀態
-      await checkTdlibState();
-    } catch (e) {
-      console.error(e);
-      showError("連線失敗", "無法連線到伺服器，請確認後端是否啟動。");
-      setScreen("login");
-    }
+    await run(async () => {
+      const s = await resolveScreen(userId);
+      setScreen(s);
+    });
   }
 
-  async function startTelegramSession() {
-    try {
-      setScreen("checking");
+  async function createSession() {
+    setScreen("checking");
 
-      const res = await fetch(`${TDLIB_BASE}/auth/start`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: userId,
-        }),
-      });
-
-      const data = await res.json();
-      console.log("auth start:", data);
-
-      await checkTdlibState();
-    } catch (e) {
-      console.error(e);
-      showError("建立失敗", "無法建立 Telegram session。");
-      setScreen("login");
-    }
-  }
-
-  async function checkTdlibState() {
-    try {
-      const res = await fetch(`${TDLIB_BASE}/auth/state/${userId}`);
-
-      if (res.status === 404) {
-        setScreen("create_session");
-        return;
-      }
-
-      if (!res.ok) {
-        showError("無法登入", "TDLib 狀態異常。");
-        setScreen("login");
-        return;
-      }
-
-      const data = await res.json();
-      console.log("tdlib state:", data);
-
-      const payload = data.data || data;
-      const state = payload.auth_state || payload.auth_state_raw?.["@type"];
-
-      if (
-        payload.is_ready ||
-        payload.is_authorized ||
-        state === "authorizationStateReady"
-      ) {
-        setScreen("home");
-      } else if (state === "authorizationStateWaitPhoneNumber") {
-        setScreen("phone");
-      } else if (state === "authorizationStateWaitCode") {
-        setScreen("code");
-      } else if (state === "authorizationStateWaitPassword") {
-        setScreen("password");
-      } else {
-        setScreen("phone");
-      }
-    } catch (e) {
-      console.error(e);
-      showError("連線失敗", "無法連線到 TDLib service。");
-      setScreen("login");
-    }
-  }
-
-  function showError(title: string, message: string) {
-    console.log(title, message);
-    setErrorMessage(`${title}：${message}`);
-
-    if (typeof window !== "undefined") {
-      window.alert(`${title}\n${message}`);
-    } else {
-      showError(title, message);
-    }
-  }
-
-  async function startLogin() {
-    try {
-      const res = await fetch(`${TDLIB_BASE}/auth/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
-      });
-      const data = await res.json();
-      console.log("start:", data);
-      await checkTdlibState();
-    } catch (e) {
-      console.error(e);
-      showError("Error", "Start login failed");
-    }
+    await run(async () => {
+      await startSession(userId);
+      setScreen("phone");
+    });
   }
 
   async function submitPhone() {
-    await postAuth("/auth/phone", { user_id: userId, phone_number: phone });
+    setScreen("checking");
+
+    await run(async () => {
+      await sendPhone(userId, phone);
+      setScreen(await resolveScreen(userId));
+    });
   }
 
   async function submitCode() {
-    await postAuth("/auth/code", { user_id: userId, code });
+    setScreen("checking");
+
+    await run(async () => {
+      await sendCode(userId, code);
+      setScreen(await resolveScreen(userId));
+    });
   }
 
   async function submitPassword() {
-    await postAuth("/auth/password", { user_id: userId, password });
+    setScreen("checking");
+
+    await run(async () => {
+      await sendPassword(userId, password);
+      setScreen(await resolveScreen(userId));
+    });
   }
 
-  async function postAuth(path: string, body: any) {
+  async function handleLoadGroups() {
+    await run(async () => {
+      const data: any = await loadSupergroups(userId);
+      const list = Array.isArray(data) ? data : data.data || data.result || [];
+
+      setGroups(list);
+      setSelectedGroup(null);
+      log(`載入群組完成：${list.length} 個`);
+    }, "audience");
+  }
+
+  async function handleLoadFolders() {
+    const res: any = await getFolders(userId);
+    setFolders(res.data || []);
+    log(`載入 folders ${res.data?.length}`);
+  }
+
+  async function handleLoadFolderChats() {
+    if (!selectedFolder) return;
+
+    const res: any = await getFolderChats(userId, selectedFolder.id);
+
+    const list = res.data || [];
+    setFolderChats(list);
+
+    flog(`載入 chats ${list.length}`);
+  }
+
+  async function handleSendFolder() {
+    if (!selectedFolder) {
+      return Alert.alert("請選 folder");
+    }
+
+    if (!messageText.trim()) {
+      return Alert.alert("請輸入訊息");
+    }
+
+    setFolderSending(true);
+    setFolderLogs([]);
+
+    flog("開始發送 folder...");
+
     try {
-      const res = await fetch(`${TDLIB_BASE}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const res: any = await sendFolder(userId, selectedFolder.id, messageText);
+      const result = res.data || res;
+
+      flog(`總數: ${result.total ?? 0}`);
+      flog(`成功: ${result.success ?? 0}`);
+      flog(`失敗: ${result.failed ?? 0}`);
+
+      const results = result.results || [];
+
+      results.forEach((c: any) => {
+        if (c.ok) {
+          flog(`✔ ${c.title || c.chat_id}`);
+        } else {
+          flog(`❌ ${c.title || c.chat_id} ${c.error || ""}`);
+        }
       });
-      const data = await res.json();
-      console.log(path, data);
-      await checkTdlibState();
-    } catch (e) {
-      console.error(e);
-      showError("Error", "Auth step failed");
+
+      Alert.alert(
+        "完成",
+        `成功 ${result.success ?? 0} / 失敗 ${result.failed ?? 0}`,
+      );
+    } catch (e: any) {
+      flog(`錯誤: ${e?.message || "發送失敗"}`);
+      Alert.alert("錯誤", e?.message || "發送失敗");
+    } finally {
+      setFolderSending(false);
     }
   }
 
-  async function loadGroups() {
-    const res = await fetch(`${TDLIB_BASE}/supergroups/${userId}`);
-    const data = await res.json();
-    const list = Array.isArray(data) ? data : data.data || data.result || [];
-    setGroups(list);
-  }
-
-  async function sendToGroupMembers() {
-    if (!selectedGroup) return showError("Error", "請先選群組");
-    if (!text.trim()) return showError("Error", "請輸入訊息");
+  async function handleSendAudience() {
+    if (!selectedGroup) {
+      Alert.alert("錯誤", "請先選群組");
+      return;
+    }
 
     const chatId = selectedGroup.chat_id || selectedGroup.id;
 
-    const res = await fetch(
-      `${TDLIB_BASE}/supergroups/${userId}/${chatId}/send`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, max_count: Number(maxCount || 1) }),
-      },
-    );
+    log("開始取得成員...");
 
-    const data = await res.json();
-    console.log("send group:", data);
-    log(`群組群發完成: ${JSON.stringify(data)}`);
+    const membersRes: any = await getAllMembers(userId, chatId);
+
+    console.log("membersRes =", membersRes);
+    log(`membersRes: ${JSON.stringify(membersRes)}`);
+
+    const members = Array.isArray(membersRes)
+      ? membersRes
+      : Array.isArray(membersRes.data)
+        ? membersRes.data
+        : Array.isArray(membersRes.data?.members)
+          ? membersRes.data.members
+          : Array.isArray(membersRes.result)
+            ? membersRes.result
+            : [];
+
+    log(`取得 ${members.length} 個成員`);
+
+    log(`取得 ${members.length} 個成員`);
+
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < members.length; i++) {
+      const m = members[i];
+
+      const targetName =
+        m.display_name ||
+        m.name ||
+        [m.first_name, m.last_name].filter(Boolean).join(" ") ||
+        m.username ||
+        String(m.user_id || m.id);
+
+      const targetChatId = m.user_id || m.id;
+
+      try {
+        log(`正在發送給：${targetName}`);
+        await sendMessage(userId, targetChatId, messageText);
+
+        success++;
+        log(`✔ ${i + 1}/${members.length} ${targetName}`);
+      } catch (e) {
+        failed++;
+        log(`❌ ${i + 1}/${members.length} ${targetName}`);
+      }
+
+      // 🔥 防封：延遲
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    log(`完成 success=${success} failed=${failed}`);
+    Alert.alert("完成", `成功 ${success} / 失敗 ${failed}`);
   }
-
-  async function loadFolders() {
-    const res = await fetch(`${TDLIB_BASE}/folders/${userId}`);
-    const data = await res.json();
-    const list = Array.isArray(data) ? data : data.data || data.result || [];
-    setFolders(list);
-  }
-
-  async function sendToFolder() {
-    if (!selectedFolder) return showError("Error", "請先選盒子/Folder");
-    if (!text.trim()) return showError("Error", "請輸入訊息");
-
-    const folderId = selectedFolder.id || selectedFolder.folder_id;
-
-    const res = await fetch(
-      `${TDLIB_BASE}/folders/${userId}/${folderId}/send`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      },
-    );
-
-    const data = await res.json();
-    console.log("send folder:", data);
-    log(`盒子群發完成: ${JSON.stringify(data)}`);
-  }
-
   if (screen === "checking") {
-    return <CenterText text="Checking session..." />;
+    return <Center text="Checking..." />;
   }
 
   if (screen === "login") {
     return (
-      <Page title="TGMember Login">
+      <Page title="Login">
         <Label>User ID</Label>
         <TextInput
           style={styles.input}
@@ -273,10 +295,8 @@ export default function IndexScreen() {
 
   if (screen === "create_session") {
     return (
-      <Page title="建立 Session">
-        <Text style={styles.info}>此帳號尚未建立 Telegram Session</Text>
-
-        <Btn title="Start Telegram Login" onPress={startTelegramSession} />
+      <Page title="Create Session">
+        <Btn title="Start Telegram Login" onPress={createSession} />
         <Btn title="Back" onPress={() => setScreen("login")} />
       </Page>
     );
@@ -284,7 +304,7 @@ export default function IndexScreen() {
 
   if (screen === "phone") {
     return (
-      <Page title="Phone Login">
+      <Page title="Phone">
         <Label>Phone Number</Label>
         <TextInput
           style={styles.input}
@@ -299,7 +319,7 @@ export default function IndexScreen() {
 
   if (screen === "code") {
     return (
-      <Page title="Code Verification">
+      <Page title="Code">
         <Label>Code</Label>
         <TextInput style={styles.input} value={code} onChangeText={setCode} />
         <Btn title="Submit Code" onPress={submitCode} />
@@ -309,7 +329,7 @@ export default function IndexScreen() {
 
   if (screen === "password") {
     return (
-      <Page title="2FA Password">
+      <Page title="Password">
         <Label>Password</Label>
         <TextInput
           style={styles.input}
@@ -326,8 +346,69 @@ export default function IndexScreen() {
     return (
       <Page title="TGMember Home">
         <Text style={styles.info}>User ID: {userId}</Text>
+
         <Btn title="群組成員群發" onPress={() => setScreen("audience")} />
         <Btn title="對話盒子群發" onPress={() => setScreen("folder")} />
+      </Page>
+    );
+  }
+
+  if (screen === "folder") {
+    return (
+      <Page title="Folder 群發">
+        <Btn title="Back" onPress={() => setScreen("home")} />
+
+        <Btn title="Load Folders" onPress={handleLoadFolders} />
+
+        {folders.map((f) => {
+          const selected = selectedFolder && selectedFolder.id === f.id;
+
+          return (
+            <TouchableOpacity
+              key={f.id}
+              style={[styles.item, selected && styles.selected]}
+              onPress={() => setSelectedFolder(f)}
+            >
+              <Text style={styles.itemTitle}>{f.title || f.name}</Text>
+              <Text style={styles.itemSub}>folder_id: {f.id}</Text>
+            </TouchableOpacity>
+          );
+        })}
+
+        <Btn title="Load Chats" onPress={handleLoadFolderChats} />
+
+        {folderChats.map((c) => (
+          <Text key={c.chat_id} style={styles.log}>
+            {c.title} ({c.chat_id})
+          </Text>
+        ))}
+
+        <Label>Message</Label>
+        <TextInput
+          style={[styles.input, styles.textarea]}
+          multiline
+          value={messageText}
+          onChangeText={setMessageText}
+          placeholder="message"
+        />
+
+        {folderSending ? (
+          <View style={styles.progressBox}>
+            <Text style={styles.progressTitle}>Folder sending...</Text>
+            <Text style={styles.progressText}>
+              Please do not close this screen.
+            </Text>
+          </View>
+        ) : (
+          <Btn title="Send Folder" onPress={handleSendFolder} />
+        )}
+
+        <Text style={styles.section}>Folder Logs</Text>
+        {folderLogs.map((l, i) => (
+          <Text key={i} style={styles.log}>
+            {l}
+          </Text>
+        ))}
       </Page>
     );
   }
@@ -336,67 +417,83 @@ export default function IndexScreen() {
     return (
       <Page title="群組成員群發">
         <Btn title="Back" onPress={() => setScreen("home")} />
-        <Btn title="Load Groups" onPress={loadGroups} />
+        <Btn title="Load Groups" onPress={handleLoadGroups} />
 
-        {groups.map((g) => (
-          <TouchableOpacity
-            key={String(g.chat_id || g.id)}
-            style={[
-              styles.item,
-              selectedGroup &&
-                (selectedGroup.chat_id || selectedGroup.id) ===
-                  (g.chat_id || g.id) &&
-                styles.selected,
-            ]}
-            onPress={() => setSelectedGroup(g)}
-          >
-            <Text>{g.title || `Group ${g.chat_id || g.id}`}</Text>
-          </TouchableOpacity>
-        ))}
+        {groups.map((g) => {
+          const id = g.chat_id || g.id;
+          const selected =
+            selectedGroup && (selectedGroup.chat_id || selectedGroup.id) === id;
 
-        <SenderInputs
-          text={text}
-          setText={setText}
-          maxCount={maxCount}
-          setMaxCount={setMaxCount}
+          return (
+            <TouchableOpacity
+              key={String(id)}
+              style={[styles.item, selected && styles.selected]}
+              onPress={() => setSelectedGroup(g)}
+            >
+              <Text style={styles.itemTitle}>
+                {g.title || g.name || `Group ${id}`}
+              </Text>
+              <Text style={styles.itemSub}>chat_id: {String(id)}</Text>
+            </TouchableOpacity>
+          );
+        })}
+
+        <Label>Message</Label>
+        <TextInput
+          style={[styles.input, styles.textarea]}
+          multiline
+          value={messageText}
+          onChangeText={setMessageText}
+          placeholder="輸入要群發的訊息"
         />
-        <Btn title="Start Group Send" onPress={sendToGroupMembers} />
-        <Logs logs={logs} />
+
+        <Label>Max Count</Label>
+        <TextInput
+          style={styles.input}
+          value={maxCount}
+          onChangeText={setMaxCount}
+          keyboardType="numeric"
+        />
+
+        {sending ? (
+          <View style={styles.progressBox}>
+            <Text style={styles.progressTitle}>Sending...</Text>
+            <Text style={styles.progressText}>
+              Queue is running. Please do not close this screen.
+            </Text>
+          </View>
+        ) : (
+          <Btn title="Start Group Send" onPress={handleSendAudience} />
+        )}
+
+        {sendResult && (
+          <View style={styles.resultBox}>
+            <Text style={styles.resultTitle}>Send Result</Text>
+            <Text style={styles.resultText}>
+              {JSON.stringify(sendResult, null, 2)}
+            </Text>
+          </View>
+        )}
+
+        {sendError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorTitle}>Send Failed</Text>
+            <Text style={styles.errorText}>{sendError}</Text>
+            <Btn title="Retry" onPress={handleSendAudience} />
+          </View>
+        ) : null}
+
+        <Text style={styles.section}>Logs</Text>
+        {logs.map((l, i) => (
+          <Text key={i} style={styles.log}>
+            {l}
+          </Text>
+        ))}
       </Page>
     );
   }
 
-  return (
-    <Page title="對話盒子群發">
-      <Btn title="Back" onPress={() => setScreen("home")} />
-      <Btn title="Load Folders" onPress={loadFolders} />
-
-      {folders.map((f) => (
-        <TouchableOpacity
-          key={String(f.id || f.folder_id)}
-          style={[
-            styles.item,
-            selectedFolder &&
-              (selectedFolder.id || selectedFolder.folder_id) ===
-                (f.id || f.folder_id) &&
-              styles.selected,
-          ]}
-          onPress={() => setSelectedFolder(f)}
-        >
-          <Text>{f.name || f.title || `Folder ${f.id || f.folder_id}`}</Text>
-        </TouchableOpacity>
-      ))}
-
-      <SenderInputs
-        text={text}
-        setText={setText}
-        maxCount={maxCount}
-        setMaxCount={setMaxCount}
-      />
-      <Btn title="Start Folder Send" onPress={sendToFolder} />
-      <Logs logs={logs} />
-    </Page>
-  );
+  return <Center text="Unknown screen" />;
 }
 
 function Page({ title, children }: any) {
@@ -408,7 +505,15 @@ function Page({ title, children }: any) {
   );
 }
 
-function CenterText({ text }: { text: string }) {
+function Btn({ title, onPress }: any) {
+  return (
+    <TouchableOpacity style={styles.button} onPress={onPress}>
+      <Text style={styles.buttonText}>{title}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function Center({ text }: { text: string }) {
   return (
     <View style={styles.center}>
       <Text>{text}</Text>
@@ -420,61 +525,35 @@ function Label({ children }: any) {
   return <Text style={styles.label}>{children}</Text>;
 }
 
-function Btn({ title, onPress }: any) {
-  return (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
-      <Text style={styles.buttonText}>{title}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function SenderInputs({ text, setText, maxCount, setMaxCount }: any) {
-  return (
-    <>
-      <Label>Message</Label>
-      <TextInput
-        style={[styles.input, styles.textarea]}
-        multiline
-        value={text}
-        onChangeText={setText}
-      />
-
-      <Label>Max Count</Label>
-      <TextInput
-        style={styles.input}
-        value={maxCount}
-        onChangeText={setMaxCount}
-        keyboardType="numeric"
-      />
-    </>
-  );
-}
-
-function Logs({ logs }: { logs: string[] }) {
-  return (
-    <>
-      <Text style={styles.section}>Logs</Text>
-      {logs.map((l, i) => (
-        <Text key={i} style={styles.log}>
-          {l}
-        </Text>
-      ))}
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
-  center: {
+  container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 16,
     backgroundColor: "#fff",
   },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
-  label: { marginTop: 10, fontWeight: "600" },
-  section: { marginTop: 20, fontWeight: "bold" },
-  info: { marginBottom: 16 },
+  center: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  label: {
+    marginTop: 10,
+    fontWeight: "600",
+  },
+  info: {
+    marginBottom: 16,
+  },
+  section: {
+    marginTop: 20,
+    fontWeight: "bold",
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -482,14 +561,21 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 6,
   },
-  textarea: { height: 110, textAlignVertical: "top" },
+  textarea: {
+    height: 110,
+    textAlignVertical: "top",
+  },
   button: {
     backgroundColor: "#1677ff",
     padding: 12,
     borderRadius: 6,
     marginVertical: 8,
   },
-  buttonText: { color: "#fff", textAlign: "center", fontWeight: "600" },
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "600",
+  },
   item: {
     padding: 12,
     borderWidth: 1,
@@ -497,10 +583,61 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginVertical: 5,
   },
-  selected: { backgroundColor: "#dbeafe" },
-  log: { fontSize: 12, marginTop: 4 },
+  selected: {
+    backgroundColor: "#dbeafe",
+  },
+  itemTitle: {
+    fontWeight: "600",
+  },
+  itemSub: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+  },
+  log: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  progressBox: {
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: "#eef6ff",
+    marginVertical: 8,
+  },
+  progressTitle: {
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    color: "#555",
+  },
+  resultBox: {
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: "#ecfdf5",
+    marginVertical: 8,
+  },
+  resultTitle: {
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  resultText: {
+    fontSize: 12,
+  },
+  errorBox: {
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: "#fef2f2",
+    marginVertical: 8,
+  },
+  errorTitle: {
+    fontWeight: "700",
+    color: "#991b1b",
+    marginBottom: 4,
+  },
   errorText: {
-    color: "red",
-    marginVertical: 10,
+    fontSize: 12,
+    color: "#991b1b",
   },
 });
