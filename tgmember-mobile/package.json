@@ -1,5 +1,5 @@
 {
-  "name": "expo-template-default",
+  "name": "tgmember-mobile",
   "license": "0BSD",
   "main": "expo-router/entry",
   "version": "54.0.60",
@@ -9,6 +9,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:web": "expo export -p web && npx --yes workbox-cli@7.3.0 generateSW workbox-config.js",
     "lint": "expo lint"
   },
   "dependencies": {
