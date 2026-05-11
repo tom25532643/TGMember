@@ -5,11 +5,13 @@ import { getAuthState } from "../api/tdlib";
 export type Screen =
   | "checking"
   | "login"
-  | "create_session"
+  | "session_missing"
   | "phone"
   | "code"
   | "password"
-  | "home";
+  | "home"
+  | "audience"
+  | "folder";
 
 function mapState(payload: any): Screen {
   const state = payload.auth_state || payload.auth_state_raw?.["@type"];
@@ -30,17 +32,19 @@ function mapState(payload: any): Screen {
 }
 
 export async function resolveScreen(userId: string): Promise<Screen> {
-  // 1️⃣ CRM check
-  await getMember(userId);
+  const member = await getMember(userId);
 
-  // 2️⃣ TDLib
+  if (!member) {
+    throw new Error("User does not exist. Please contact the developer.");
+  }
+
   try {
     const res: any = await getAuthState(userId);
     const payload = res.data || res;
     return mapState(payload);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
-      return "create_session";
+      return "session_missing";
     }
     throw e;
   }
