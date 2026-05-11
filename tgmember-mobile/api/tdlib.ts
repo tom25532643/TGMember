@@ -1,6 +1,6 @@
 import { requestJson } from "./client";
 
-const BASE = "http://10.191.36.55:8000";
+const BASE = "http://10.10.156.244:8000";
 
 export async function getAuthState(userId: string) {
   return requestJson(`${BASE}/auth/state/${userId}`);

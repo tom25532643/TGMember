@@ -1,6 +1,6 @@
 import { requestJson } from "./client";
 
-const CRM_BASE = "http://10.191.36.55:8001";
+const CRM_BASE = "http://10.10.156.244:8001";
 
 export async function getMember(userId: string) {
   const res = await fetch(`${CRM_BASE}/members/${userId}`);
