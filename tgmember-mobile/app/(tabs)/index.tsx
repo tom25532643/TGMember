@@ -293,10 +293,10 @@ export default function IndexScreen() {
     );
   }
 
-  if (screen === "create_session") {
+  if (screen === "session_missing") {
     return (
-      <Page title="Create Session">
-        <Btn title="Start Telegram Login" onPress={createSession} />
+      <Page title="TDLib Session 不存在">
+        <Text style={styles.info}>TDLib session 不存在，請聯絡開發人員。</Text>
         <Btn title="Back" onPress={() => setScreen("login")} />
       </Page>
     );
