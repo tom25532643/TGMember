@@ -7,13 +7,6 @@ export async function getAuthState(userId: string) {
   return requestJson(`${BASE}/auth/state/${userId}`);
 }
 
-export async function startSession(userId: string) {
-  return requestJson(`${BASE}/auth/start`, {
-    method: "POST",
-    body: JSON.stringify({ user_id: userId }),
-  });
-}
-
 export async function sendPhone(userId: string, phone: string) {
   return requestJson(`${BASE}/auth/phone`, {
     method: "POST",
