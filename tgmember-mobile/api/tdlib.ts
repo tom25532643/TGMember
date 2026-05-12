@@ -1,6 +1,7 @@
+import { API_CONFIG } from "../config/api";
 import { requestJson } from "./client";
 
-const BASE = "http://10.10.156.244:8000";
+const BASE = API_CONFIG.TDLIB_BASE_URL;
 
 export async function getAuthState(userId: string) {
   return requestJson(`${BASE}/auth/state/${userId}`);
