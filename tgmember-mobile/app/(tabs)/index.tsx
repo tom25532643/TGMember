@@ -11,7 +11,6 @@ import {
 
 import { resolveScreen, Screen } from "../../auth/authMachine";
 import {
-  startSession,
   sendPhone,
   sendCode,
   sendPassword,
@@ -102,15 +101,6 @@ export default function IndexScreen() {
     await run(async () => {
       const s = await resolveScreen(userId);
       setScreen(s);
-    });
-  }
-
-  async function createSession() {
-    setScreen("checking");
-
-    await run(async () => {
-      await startSession(userId);
-      setScreen("phone");
     });
   }
 
