@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { registerServiceWorker } from './register-service-worker';
+import { registerServiceWorker } from '../utils/register-service-worker';
 
 registerServiceWorker();
 
