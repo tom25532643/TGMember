@@ -48,7 +48,7 @@ Responsibility:
 Current login check endpoint:
 
 ```text
-GET /users/{id}
+GET /members/{id}
 ```
 
 ## TDLib Service
@@ -79,7 +79,19 @@ POST /auth/password
 
 Each TGMember user maps to one independent TDLib session folder.
 
-The mobile UI must not automatically create a TDLib session. If `/auth/state/{user_id}` returns 404, show a user-facing error and ask the user to contact the developer.
+Current login behavior:
+
+```text
+CRM user does not exist
+-> Stop login and show an error
+
+CRM user exists, but TDLib /auth/state/{user_id} returns 404
+-> POST /auth/start
+-> Show phone input
+
+TDLib session exists
+-> Follow TDLib auth state mapping
+```
 
 ## API configuration
 
