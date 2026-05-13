@@ -12,8 +12,8 @@ export const API_CONFIG = {
   CRM_BASE_URL: "http://10.191.36.55:8001",
 
   /**
-   * Keep the user lookup path here to avoid scattering /users vs /members decisions.
-   * Current agreed login flow: GET /users/{id}
+   * Keep the user lookup path here to avoid scattering endpoint decisions.
+   * Current agreed login flow: GET /members/{id}
    */
   crmUserPath(userId: string) {
     return `/members/${userId}`;
