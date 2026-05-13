@@ -334,18 +334,30 @@ export default function IndexScreen() {
 
   if (screen === "home") {
     return (
-      <Page title="TGMember Home">
+      <Page title="TGMember">
+        <Text style={styles.subtitle}>Telegram 成員管理與群發工具</Text>
         <Text style={styles.info}>User ID: {userId}</Text>
 
-        <Btn title="群組成員群發" onPress={() => setScreen("audience")} />
-        <Btn title="對話盒子群發" onPress={() => setScreen("folder")} />
+        <HomeCard
+          title="群組群發"
+          description="選擇 Telegram folder / 對話群組，將訊息送到多個群組或對話。"
+          actionText="進入群組群發"
+          onPress={() => setScreen("folder")}
+        />
+
+        <HomeCard
+          title="對話群發"
+          description="從指定群組抓取成員，對成員逐一發送訊息。"
+          actionText="進入對話群發"
+          onPress={() => setScreen("audience")}
+        />
       </Page>
     );
   }
 
   if (screen === "folder") {
     return (
-      <Page title="Folder 群發">
+      <Page title="群組群發">
         <Btn title="Back" onPress={() => setScreen("home")} />
 
         <Btn title="Load Folders" onPress={handleLoadFolders} />
@@ -405,7 +417,7 @@ export default function IndexScreen() {
 
   if (screen === "audience") {
     return (
-      <Page title="群組成員群發">
+      <Page title="對話群發">
         <Btn title="Back" onPress={() => setScreen("home")} />
         <Btn title="Load Groups" onPress={handleLoadGroups} />
 
@@ -453,7 +465,7 @@ export default function IndexScreen() {
             </Text>
           </View>
         ) : (
-          <Btn title="Start Group Send" onPress={handleSendAudience} />
+          <Btn title="Start Audience Send" onPress={handleSendAudience} />
         )}
 
         {sendResult && (
@@ -495,6 +507,16 @@ function Page({ title, children }: any) {
   );
 }
 
+function HomeCard({ title, description, actionText, onPress }: any) {
+  return (
+    <TouchableOpacity style={styles.homeCard} onPress={onPress}>
+      <Text style={styles.homeCardTitle}>{title}</Text>
+      <Text style={styles.homeCardDescription}>{description}</Text>
+      <Text style={styles.homeCardAction}>{actionText}</Text>
+    </TouchableOpacity>
+  );
+}
+
 function Btn({ title, onPress }: any) {
   return (
     <TouchableOpacity style={styles.button} onPress={onPress}>
@@ -529,8 +551,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "bold",
+    marginBottom: 6,
+  },
+  subtitle: {
+    color: "#555",
     marginBottom: 16,
   },
   label: {
@@ -565,6 +591,28 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     fontWeight: "600",
+  },
+  homeCard: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    backgroundColor: "#fff",
+  },
+  homeCardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  homeCardDescription: {
+    color: "#555",
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  homeCardAction: {
+    color: "#1677ff",
+    fontWeight: "700",
   },
   item: {
     padding: 12,
