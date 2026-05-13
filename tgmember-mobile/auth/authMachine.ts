@@ -1,4 +1,5 @@
-import { ApiError } from "../api/client";
+import { ApiError, requestJson } from "../api/client";
+import { API_CONFIG } from "../config/api";
 import { getMember } from "../api/crm";
 import { getAuthState } from "../api/tdlib";
 
@@ -31,6 +32,13 @@ function mapState(payload: any): Screen {
   return "phone";
 }
 
+async function startTdlibSession(userId: string) {
+  return requestJson(`${API_CONFIG.TDLIB_BASE_URL}/auth/start`, {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
 export async function resolveScreen(userId: string): Promise<Screen> {
   const member = await getMember(userId);
 
@@ -44,7 +52,8 @@ export async function resolveScreen(userId: string): Promise<Screen> {
     return mapState(payload);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
-      return "session_missing";
+      await startTdlibSession(userId);
+      return "phone";
     }
     throw e;
   }
