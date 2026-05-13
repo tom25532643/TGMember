@@ -7,7 +7,7 @@ This document defines the current login strategy. Do not change this flow unless
 The frontend asks the CRM/FastAPI service whether the TGMember user exists:
 
 ```text
-GET /users/{id}
+GET /members/{id}
 ```
 
 If the user does not exist, the frontend must stop the flow and show:
@@ -24,6 +24,18 @@ If the CRM user exists, the frontend asks TDLib Service for the Telegram auth st
 GET /auth/state/{user_id}
 ```
 
+## Step 3: Missing TDLib session
+
+If TDLib Service returns 404 for `/auth/state/{user_id}`, it means the TGMember user exists but the Telegram/TDLib login flow has not started yet.
+
+The frontend should call:
+
+```text
+POST /auth/start
+```
+
+Then show the phone input screen.
+
 ## State mapping
 
 | TDLib state | UI screen |
@@ -33,21 +45,19 @@ GET /auth/state/{user_id}
 | authorizationStateWaitPassword | Password input |
 | authorizationStateReady | Home |
 
-## Missing TDLib session
-
-If TDLib Service returns 404 for `/auth/state/{user_id}`, the frontend must not call `/auth/start` automatically.
-
-Show:
+## Current login behavior
 
 ```text
-TDLib session does not exist. Please contact the developer.
+CRM user does not exist
+-> Show "No such account. Please contact the developer."
+
+CRM user exists, but TDLib session does not exist
+-> POST /auth/start
+-> Phone input
+
+TDLib session exists
+-> Follow TDLib auth state mapping
 ```
-
-Reason:
-
-- TDLib sessions are expected to be prepared by backend/admin flow.
-- The mobile UI should not create session folders implicitly.
-- This avoids accidental wrong-user or wrong-environment sessions.
 
 ## Important ports
 
@@ -60,5 +70,6 @@ Common mistakes:
 
 ```text
 /auth/state sent to 8001 -> wrong
-/users sent to 8000      -> wrong
+/members sent to 8000    -> wrong
+/users/{id}              -> outdated, use /members/{id}
 ```
