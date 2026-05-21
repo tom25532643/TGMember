@@ -40,6 +40,33 @@
         background: #e9f2ff;
       }
 
+      .chat-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .unread-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #1677ff;
+        flex: 0 0 auto;
+      }
+
+      .unread-dot.hidden {
+        visibility: hidden;
+      }
+
+      .chat-title-text {
+        flex: 1;
+        min-width: 0;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       .main {
         flex: 1;
         display: flex;
@@ -148,6 +175,6 @@
     </div>
 
     <script src="js/api.js"></script>
-    <script src="js/chat.js?v=partial-render-1"></script>
+    <script src="js/chat.js?v=unread-dot-1"></script>
   </body>
 </html>
