@@ -298,6 +298,8 @@ function renderChats(chats) {
 
   for (const chat of chats) {
     const item = document.createElement("div");
+    const unreadCount = Number(chat.unread_count || 0);
+    const hasUnread = unreadCount > 0;
 
     item.className = "chat-item";
     item.style.padding = "10px";
@@ -305,8 +307,11 @@ function renderChats(chats) {
     item.style.cursor = "pointer";
 
     item.innerHTML = `
-      <div style="font-weight:600;">
-        ${escapeHtml(chat.title || `Chat ${chat.id}`)}
+      <div class="chat-row" title="${escapeHtml(chat.title || `Chat ${chat.id}`)}">
+        <span class="unread-dot${hasUnread ? "" : " hidden"}"></span>
+        <div class="chat-title-text">
+          ${escapeHtml(chat.title || `Chat ${chat.id}`)}
+        </div>
       </div>
     `;
 
