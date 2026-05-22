@@ -67,6 +67,34 @@
         white-space: nowrap;
       }
 
+      .load-more-wrap {
+        padding: 12px;
+      }
+
+      .load-more-btn {
+        width: 100%;
+        padding: 9px 10px;
+        border: 1px solid #1677ff;
+        border-radius: 6px;
+        background: white;
+        color: #1677ff;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .load-more-btn:disabled {
+        border-color: #ccc;
+        color: #888;
+        cursor: not-allowed;
+      }
+
+      .chat-count-text {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #666;
+        text-align: center;
+      }
+
       .main {
         flex: 1;
         display: flex;
@@ -156,6 +184,10 @@
     <div class="layout">
       <div class="sidebar">
         <div id="chatList"></div>
+        <div class="load-more-wrap">
+          <button id="loadMoreChatsBtn" class="load-more-btn">Load More Chats</button>
+          <div id="chatCountText" class="chat-count-text"></div>
+        </div>
       </div>
 
       <div class="main">
@@ -175,6 +207,6 @@
     </div>
 
     <script src="js/api.js"></script>
-    <script src="js/chat.js?v=unread-dot-1"></script>
+    <script src="js/chat.js?v=load-more-chats-1"></script>
   </body>
 </html>
