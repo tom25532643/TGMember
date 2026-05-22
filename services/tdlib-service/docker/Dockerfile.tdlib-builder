@@ -1,0 +1,37 @@
+FROM debian:bookworm-slim AS tdlib-builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG TDLIB_REF=master
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        cmake \
+        gperf \
+        git \
+        libssl-dev \
+        ninja-build \
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+
+RUN git clone --depth 1 --branch ${TDLIB_REF} https://github.com/tdlib/td.git td
+
+WORKDIR /src/td/build
+
+RUN cmake \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/opt/tdlib \
+      -DTD_ENABLE_JNI=OFF \
+      -DTD_ENABLE_DOTNET=OFF \
+      -DTD_ENABLE_STATIC=OFF \
+      -GNinja \
+      .. \
+    && cmake --build . --target install
+
+RUN mkdir -p /out \
+    && find /opt/tdlib -name 'libtdjson.so*' -exec cp -av {} /out/ \;
+
+CMD ["bash", "-lc", "ls -lah /out && echo 'Copy libtdjson.so from /out to services/tdlib-service/lib/'"]
