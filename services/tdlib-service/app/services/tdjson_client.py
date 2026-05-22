@@ -1,29 +1,33 @@
 import json
 import os
+import platform
 import queue
 import threading
 import time
 import uuid
 from ctypes import CDLL, c_char_p, c_double, c_void_p
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
-from app.core.config import BASE_DIR, TDJSON_DLL, TDLIB_LOG_VERBOSITY
+from app.core.config import BASE_DIR, TDJSON_LIBRARY, TDLIB_LOG_VERBOSITY
 from app.core.errors import TdLibError
 
 
 class TdJson:
     def __init__(self, tdjson_path: Optional[str] = None):
-        dll_path = Path(tdjson_path).resolve() if tdjson_path else TDJSON_DLL.resolve()
+        library_path = Path(tdjson_path).resolve() if tdjson_path else TDJSON_LIBRARY.resolve()
 
-        print('Using DLL:', dll_path)
-        print('DLL exists:', dll_path.exists())
+        print('Using TDLib library:', library_path)
+        print('TDLib library exists:', library_path.exists())
 
-        if not dll_path.exists():
-            raise FileNotFoundError(f'tdjson.dll not found: {dll_path}')
+        if not library_path.exists():
+            raise FileNotFoundError(f'TDLib library not found: {library_path}')
 
-        os.add_dll_directory(str(BASE_DIR))
-        self.lib = CDLL(str(dll_path))
+        if platform.system().lower() == 'windows' and hasattr(os, 'add_dll_directory'):
+            os.add_dll_directory(str(BASE_DIR))
+            os.add_dll_directory(str(library_path.parent))
+
+        self.lib = CDLL(str(library_path))
 
         self.lib.td_json_client_create.restype = c_void_p
         self.lib.td_json_client_send.argtypes = [c_void_p, c_char_p]
