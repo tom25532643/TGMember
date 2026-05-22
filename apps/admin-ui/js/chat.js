@@ -12,7 +12,7 @@ let hasMore = true;
 let oldestMessageId = null;
 let chatLimit = 50;
 const CHAT_LIMIT_STEP = 50;
-const CHAT_LIMIT_MAX = 500;
+const CHAT_LIMIT_MAX = 2000;
 
 const API_BASE = "http://127.0.0.1:8000";
 const WS_BASE = "ws://127.0.0.1:8000";
