@@ -8,6 +8,7 @@ let messageStore = {};
 let loadingMessages = false;
 let loadingOlder = false;
 let loadingChats = false;
+let sendingMessage = false;
 let hasMore = true;
 let oldestMessageId = null;
 let chatLimit = 50;
@@ -49,6 +50,46 @@ function setLoadMoreChatsLoading(isLoading) {
     : chatLimit >= CHAT_LIMIT_MAX
       ? "Max Chats Loaded"
       : "Load More Chats";
+}
+
+function setSendLoading(isLoading) {
+  const btn = document.getElementById("sendBtn");
+  const input = document.getElementById("messageInput");
+
+  if (btn) {
+    btn.disabled = isLoading;
+    btn.textContent = isLoading ? "Sending..." : "Send";
+  }
+
+  if (input) {
+    input.disabled = isLoading;
+  }
+}
+
+function extractTextFromTdMessage(rawMessage, fallbackText = "") {
+  const content = rawMessage?.content || {};
+  const textObj = content.text || {};
+
+  return (
+    textObj.text ||
+    rawMessage?.text ||
+    fallbackText ||
+    `[${content["@type"] || "message"}]`
+  );
+}
+
+function normalizeSentMessage(rawMessage, fallbackText) {
+  const contentType = rawMessage?.content?.["@type"] || "messageText";
+
+  return {
+    id: String(rawMessage?.id || `tmp-${Date.now()}`),
+    chat_id: String(rawMessage?.chat_id || currentChatId),
+    date: rawMessage?.date || Math.floor(Date.now() / 1000),
+    sender_id: rawMessage?.sender_id || "me",
+    is_outgoing: true,
+    content_type: contentType,
+    text: extractTextFromTdMessage(rawMessage, fallbackText),
+  };
 }
 
 function createMessageElement(msg) {
@@ -314,6 +355,58 @@ function connectWs(userId, chatId) {
   };
 }
 
+async function sendCurrentMessage() {
+  if (sendingMessage) return;
+
+  if (!currentUserId || !currentChatId) {
+    alert("Please select a chat first.");
+    return;
+  }
+
+  const input = document.getElementById("messageInput");
+  const text = input?.value?.trim() || "";
+
+  if (!text) return;
+
+  sendingMessage = true;
+  setSendLoading(true);
+
+  try {
+    const res = await fetch(`${API_BASE}/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: currentUserId,
+        chat_id: Number(currentChatId),
+        text,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.ok === false) {
+      const detail = data.detail || data.error || data;
+      throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    }
+
+    if (input) {
+      input.value = "";
+      input.focus();
+    }
+
+    const sentMessage = normalizeSentMessage(data.data || {}, text);
+    appendMessage(sentMessage);
+  } catch (err) {
+    console.error("sendCurrentMessage error:", err);
+    alert(`Send failed: ${err.message || err}`);
+  } finally {
+    sendingMessage = false;
+    setSendLoading(false);
+  }
+}
+
 async function loadChats(userId, limit = chatLimit) {
   if (loadingChats) return;
 
@@ -434,6 +527,21 @@ async function init() {
   const loadMoreBtn = document.getElementById("loadMoreChatsBtn");
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", loadMoreChats);
+  }
+
+  const sendBtn = document.getElementById("sendBtn");
+  if (sendBtn) {
+    sendBtn.addEventListener("click", sendCurrentMessage);
+  }
+
+  const input = document.getElementById("messageInput");
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendCurrentMessage();
+      }
+    });
   }
 
   await loadChats(userId);
