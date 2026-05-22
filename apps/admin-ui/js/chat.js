@@ -7,8 +7,12 @@ let messageStore = {};
 
 let loadingMessages = false;
 let loadingOlder = false;
+let loadingChats = false;
 let hasMore = true;
 let oldestMessageId = null;
+let chatLimit = 50;
+const CHAT_LIMIT_STEP = 50;
+const CHAT_LIMIT_MAX = 500;
 
 const API_BASE = "http://127.0.0.1:8000";
 const WS_BASE = "ws://127.0.0.1:8000";
@@ -24,6 +28,25 @@ function escapeHtml(text) {
 
 function formatTime(unixTs) {
   return new Date(unixTs * 1000).toLocaleString();
+}
+
+function updateChatCountText() {
+  const text = document.getElementById("chatCountText");
+  if (!text) return;
+
+  text.textContent = `Loaded ${chatsCache.length} chats / limit ${chatLimit}`;
+}
+
+function setLoadMoreChatsLoading(isLoading) {
+  const btn = document.getElementById("loadMoreChatsBtn");
+  if (!btn) return;
+
+  btn.disabled = isLoading || chatLimit >= CHAT_LIMIT_MAX;
+  btn.textContent = isLoading
+    ? "Loading..."
+    : chatLimit >= CHAT_LIMIT_MAX
+      ? "Max Chats Loaded"
+      : "Load More Chats";
 }
 
 function createMessageElement(msg) {
@@ -153,6 +176,8 @@ async function loadMessages(userId, chatId, chatTitle = "") {
   const box = document.getElementById("messageBox");
   box.innerHTML = `<div class="empty">Loading...</div>`;
 
+  renderChats(chatsCache);
+
   if (ws) {
     ws.close();
     ws = null;
@@ -277,13 +302,32 @@ function connectWs(userId, chatId) {
   };
 }
 
-async function loadChats(userId) {
-  const res = await fetch(`${API_BASE}/chats/${userId}?limit=50`);
-  const data = await res.json();
+async function loadChats(userId, limit = chatLimit) {
+  if (loadingChats) return;
 
-  chatsCache = data.data || [];
+  loadingChats = true;
+  setLoadMoreChatsLoading(true);
 
-  renderChats(chatsCache);
+  try {
+    const res = await fetch(`${API_BASE}/chats/${userId}?limit=${limit}`);
+    const data = await res.json();
+
+    chatsCache = data.data || [];
+    renderChats(chatsCache);
+    updateChatCountText();
+  } catch (err) {
+    console.error("loadChats error:", err);
+  } finally {
+    loadingChats = false;
+    setLoadMoreChatsLoading(false);
+  }
+}
+
+async function loadMoreChats() {
+  if (!currentUserId || loadingChats) return;
+
+  chatLimit = Math.min(chatLimit + CHAT_LIMIT_STEP, CHAT_LIMIT_MAX);
+  await loadChats(currentUserId, chatLimit);
 }
 
 function renderChats(chats) {
@@ -302,6 +346,9 @@ function renderChats(chats) {
     const hasUnread = unreadCount > 0;
 
     item.className = "chat-item";
+    if (String(currentChatId) === String(chat.id)) {
+      item.classList.add("active");
+    }
     item.style.padding = "10px";
     item.style.borderBottom = "1px solid #eee";
     item.style.cursor = "pointer";
@@ -371,6 +418,11 @@ async function init() {
   }
 
   currentUserId = userId;
+
+  const loadMoreBtn = document.getElementById("loadMoreChatsBtn");
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", loadMoreChats);
+  }
 
   await loadChats(userId);
 
