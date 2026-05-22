@@ -13,6 +13,8 @@ let oldestMessageId = null;
 let chatLimit = 50;
 const CHAT_LIMIT_STEP = 50;
 const CHAT_LIMIT_MAX = 2000;
+const MESSAGE_PAGE_SIZE = 50;
+const AUTO_FILL_OLDER_MAX_PAGES = 5;
 
 const API_BASE = "http://127.0.0.1:8000";
 const WS_BASE = "ws://127.0.0.1:8000";
@@ -69,7 +71,6 @@ function createMessageElement(msg) {
     />
   `;
 
-    // caption
     if (msg.text) {
       contentHtml += `<div>${escapeHtml(msg.text)}</div>`;
     }
@@ -83,12 +84,10 @@ function createMessageElement(msg) {
     ></video>
   `;
 
-    // caption
     if (msg.text) {
       contentHtml += `<div>${escapeHtml(msg.text)}</div>`;
     }
   } else {
-    // 🔥 純文字只顯示一次
     contentHtml += `<div>${escapeHtml(msg.text || `[${msg.content_type}]`)}</div>`;
   }
 
@@ -119,12 +118,9 @@ function appendMessage(msg) {
   if (!messageStore[key]) messageStore[key] = [];
 
   const beforeLength = messageStore[key].length;
-
   const merged = mergeMessages(key, [msg]);
 
-  // 沒新增就不動
   if (merged.length === beforeLength) return;
-
   if (String(currentChatId) !== key) return;
 
   const box = document.getElementById("messageBox");
@@ -140,9 +136,7 @@ function appendMessage(msg) {
 function prependMessages(chatId, older) {
   const key = String(chatId);
   const box = document.getElementById("messageBox");
-
   const oldHeight = box.scrollHeight;
-
   const frag = document.createDocumentFragment();
 
   for (const msg of older) {
@@ -158,6 +152,26 @@ function prependMessages(chatId, older) {
 
   const newHeight = box.scrollHeight;
   box.scrollTop = newHeight - oldHeight;
+}
+
+async function autoFillOlderMessages() {
+  const box = document.getElementById("messageBox");
+  if (!box) return;
+
+  let pagesLoaded = 0;
+
+  while (
+    hasMore &&
+    pagesLoaded < AUTO_FILL_OLDER_MAX_PAGES &&
+    box.scrollHeight <= box.clientHeight + 20
+  ) {
+    const loaded = await loadOlder(true);
+    if (!loaded) break;
+
+    pagesLoaded++;
+    box.scrollTop = box.scrollHeight;
+    await sleep(100);
+  }
 }
 
 async function loadMessages(userId, chatId, chatTitle = "") {
@@ -184,17 +198,16 @@ async function loadMessages(userId, chatId, chatTitle = "") {
   }
 
   try {
-    // 1. 先載入歷史訊息
-    const rawMessages = await fetchMessagesWithRetry(userId, chatId, 50);
+    const rawMessages = await fetchMessagesWithRetry(userId, chatId, MESSAGE_PAGE_SIZE);
 
     messageStore[key] = [];
     const messages = mergeMessages(chatId, rawMessages);
 
-    hasMore = rawMessages.length === 50;
+    hasMore = rawMessages.length === MESSAGE_PAGE_SIZE;
 
     renderInitial(messages);
+    await autoFillOlderMessages();
 
-    // 3. 最後才開 WebSocket，避免初始化期間亂序
     connectWs(userId, chatId);
   } catch (err) {
     console.error("loadMessages error:", err);
@@ -204,26 +217,25 @@ async function loadMessages(userId, chatId, chatTitle = "") {
   }
 }
 
-async function loadOlder() {
-  if (loadingOlder || loadingMessages || !hasMore) return;
+async function loadOlder(force = false) {
+  if (loadingOlder || (!force && loadingMessages) || !hasMore) return false;
 
   const key = String(currentChatId);
   const current = messageStore[key] || [];
 
-  if (current.length === 0) return;
+  if (current.length === 0) return false;
 
   loadingOlder = true;
 
   const box = document.getElementById("messageBox");
   const oldHeight = box.scrollHeight;
-
   const oldest = current[0];
 
   try {
     console.log("loadOlder triggered, from:", oldest.id);
 
     const res = await fetch(
-      `${API_BASE}/messages/${currentUserId}/${currentChatId}?limit=50&from_message_id=${oldest.id}`,
+      `${API_BASE}/messages/${currentUserId}/${currentChatId}?limit=${MESSAGE_PAGE_SIZE}&from_message_id=${oldest.id}`,
     );
 
     const data = await res.json();
@@ -231,7 +243,7 @@ async function loadOlder() {
 
     if (rawOlder.length === 0) {
       hasMore = false;
-      return;
+      return false;
     }
 
     const beforeLength = current.length;
@@ -239,7 +251,7 @@ async function loadOlder() {
 
     if (merged.length === beforeLength) {
       hasMore = false;
-      return;
+      return false;
     }
 
     renderInitial(merged);
@@ -247,9 +259,11 @@ async function loadOlder() {
     const newHeight = box.scrollHeight;
     box.scrollTop = newHeight - oldHeight;
 
-    hasMore = rawOlder.length === 50;
+    hasMore = rawOlder.length === MESSAGE_PAGE_SIZE;
+    return true;
   } catch (err) {
     console.error("loadOlder error:", err);
+    return false;
   } finally {
     loadingOlder = false;
   }
@@ -259,7 +273,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchMessagesWithRetry(userId, chatId, limit = 50) {
+async function fetchMessagesWithRetry(userId, chatId, limit = MESSAGE_PAGE_SIZE) {
   let lastData = [];
 
   for (let i = 0; i < 3; i++) {
@@ -274,12 +288,10 @@ async function fetchMessagesWithRetry(userId, chatId, limit = 50) {
 
     lastData = messages;
 
-    // 正常拿到多筆，就直接用
     if (messages.length > 1) {
       return messages;
     }
 
-    // 第一次只拿到 1 筆，等 TDLib 補資料
     await sleep(300);
   }
 
@@ -428,7 +440,6 @@ async function init() {
 
   const box = document.getElementById("messageBox");
 
-  // 🔥 滑到頂自動載入
   box.addEventListener("scroll", () => {
     if (box.scrollTop <= 20) {
       loadOlder();
