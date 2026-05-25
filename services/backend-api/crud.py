@@ -17,6 +17,10 @@ def get_member_by_id(db: Session, member_id: int):
     return db.query(MemberModel).filter(MemberModel.id == member_id).first()
 
 
+def get_member_by_username(db: Session, username: str):
+    return db.query(MemberModel).filter(MemberModel.username == username).first()
+
+
 def create_member(db: Session, name: str, username: str):
     member = MemberModel(name=name, username=username)
     db.add(member)
