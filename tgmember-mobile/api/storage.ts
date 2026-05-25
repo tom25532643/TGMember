@@ -33,4 +33,5 @@ export const storage = {
 
 export const STORAGE_KEYS = {
   USER_ID: "user_id",
+  LOGIN_KEY: "login_key",
 };
