@@ -1,6 +1,6 @@
 import { ApiError, requestJson } from "../api/client";
 import { API_CONFIG } from "../config/api";
-import { getMember } from "../api/crm";
+import { lookupMember } from "../api/crm";
 import { getAuthState } from "../api/tdlib";
 
 export type Screen =
@@ -13,6 +13,12 @@ export type Screen =
   | "home"
   | "audience"
   | "folder";
+
+export type ResolveScreenResult = {
+  screen: Screen;
+  userId: string;
+  member: any;
+};
 
 function mapState(payload: any): Screen {
   const state = payload.auth_state || payload.auth_state_raw?.["@type"];
@@ -39,21 +45,31 @@ async function startTdlibSession(userId: string) {
   });
 }
 
-export async function resolveScreen(userId: string): Promise<Screen> {
-  const member = await getMember(userId);
+export async function resolveScreen(loginKey: string): Promise<ResolveScreenResult> {
+  const member = await lookupMember(loginKey);
 
   if (!member) {
-    throw new Error("User does not exist. Please contact the developer.");
+    throw new Error("無此帳號，請聯絡開發人員協助開通");
   }
 
+  const tdlibUserId = String(member.id);
+
   try {
-    const res: any = await getAuthState(userId);
+    const res: any = await getAuthState(tdlibUserId);
     const payload = res.data || res;
-    return mapState(payload);
+    return {
+      screen: mapState(payload),
+      userId: tdlibUserId,
+      member,
+    };
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
-      await startTdlibSession(userId);
-      return "phone";
+      await startTdlibSession(tdlibUserId);
+      return {
+        screen: "phone",
+        userId: tdlibUserId,
+        member,
+      };
     }
     throw e;
   }
