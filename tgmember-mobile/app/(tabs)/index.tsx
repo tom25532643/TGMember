@@ -27,7 +27,8 @@ import { storage, STORAGE_KEYS } from "../../api/storage";
 export default function IndexScreen() {
   const [screen, setScreen] = useState<Screen>("checking");
 
-  const [userId, setUserId] = useState("1");
+  const [loginKey, setLoginKey] = useState("");
+  const [userId, setUserId] = useState("");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -99,8 +100,12 @@ export default function IndexScreen() {
     setScreen("checking");
 
     await run(async () => {
-      const s = await resolveScreen(userId);
-      setScreen(s);
+      const result = await resolveScreen(loginKey.trim());
+      setUserId(result.userId);
+      setScreen(result.screen);
+
+      await storage.setItem(STORAGE_KEYS.LOGIN_KEY, loginKey.trim());
+      await storage.setItem(STORAGE_KEYS.USER_ID, result.userId);
     });
   }
 
@@ -109,7 +114,9 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendPhone(userId, phone);
-      setScreen(await resolveScreen(userId));
+      const result = await resolveScreen(loginKey || userId);
+      setUserId(result.userId);
+      setScreen(result.screen);
     });
   }
 
@@ -118,7 +125,9 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendCode(userId, code);
-      setScreen(await resolveScreen(userId));
+      const result = await resolveScreen(loginKey || userId);
+      setUserId(result.userId);
+      setScreen(result.screen);
     });
   }
 
@@ -127,7 +136,9 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendPassword(userId, password);
-      setScreen(await resolveScreen(userId));
+      const result = await resolveScreen(loginKey || userId);
+      setUserId(result.userId);
+      setScreen(result.screen);
     });
   }
 
@@ -272,11 +283,14 @@ export default function IndexScreen() {
   if (screen === "login") {
     return (
       <Page title="Login">
-        <Label>User ID</Label>
+        <Label>Login Key</Label>
         <TextInput
           style={styles.input}
-          value={userId}
-          onChangeText={setUserId}
+          value={loginKey}
+          onChangeText={setLoginKey}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="例如 tom123"
         />
         <Btn title="Login" onPress={login} />
       </Page>
