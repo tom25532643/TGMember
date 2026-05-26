@@ -74,20 +74,35 @@ export default function IndexScreen() {
     }
   }
 
+  async function resolveAndApplyScreen(key: string) {
+    const result = await resolveScreen(key);
+
+    setUserId(result.userId);
+    setScreen(result.screen);
+
+    await storage.setItem(STORAGE_KEYS.USER_ID, result.userId);
+    await storage.setItem(STORAGE_KEYS.LOGIN_KEY, key);
+  }
+
   useEffect(() => {
     async function restoreUser() {
-      const saved = await storage.getItem(STORAGE_KEYS.USER_ID);
+      const savedLoginKey = await storage.getItem(STORAGE_KEYS.LOGIN_KEY);
+      const savedUserId = await storage.getItem(STORAGE_KEYS.USER_ID);
+      const saved = savedLoginKey || savedUserId;
 
       if (!saved) {
         setScreen("login");
         return;
       }
 
-      setUserId(saved);
+      setLoginKey(saved);
+
+      if (savedUserId) {
+        setUserId(savedUserId);
+      }
 
       await run(async () => {
-        const s = await resolveScreen(saved);
-        setScreen(s);
+        await resolveAndApplyScreen(saved);
       });
     }
 
@@ -95,17 +110,17 @@ export default function IndexScreen() {
   }, []);
 
   async function login() {
-    await storage.setItem(STORAGE_KEYS.USER_ID, userId);
+    const key = loginKey.trim();
+
+    if (!key) {
+      Alert.alert("錯誤", "請輸入 Login Key");
+      return;
+    }
 
     setScreen("checking");
 
     await run(async () => {
-      const result = await resolveScreen(loginKey.trim());
-      setUserId(result.userId);
-      setScreen(result.screen);
-
-      await storage.setItem(STORAGE_KEYS.LOGIN_KEY, loginKey.trim());
-      await storage.setItem(STORAGE_KEYS.USER_ID, result.userId);
+      await resolveAndApplyScreen(key);
     });
   }
 
@@ -114,9 +129,7 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendPhone(userId, phone);
-      const result = await resolveScreen(loginKey || userId);
-      setUserId(result.userId);
-      setScreen(result.screen);
+      await resolveAndApplyScreen(loginKey || userId);
     });
   }
 
@@ -125,9 +138,7 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendCode(userId, code);
-      const result = await resolveScreen(loginKey || userId);
-      setUserId(result.userId);
-      setScreen(result.screen);
+      await resolveAndApplyScreen(loginKey || userId);
     });
   }
 
@@ -136,9 +147,7 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendPassword(userId, password);
-      const result = await resolveScreen(loginKey || userId);
-      setUserId(result.userId);
-      setScreen(result.screen);
+      await resolveAndApplyScreen(loginKey || userId);
     });
   }
 
