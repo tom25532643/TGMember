@@ -181,8 +181,11 @@ export default function IndexScreen() {
   }
 
   async function handlePreviewFolderSend() {
+    console.log("Preview Targets clicked");
+
     if (!selectedFolder) {
-      return Alert.alert("請選 folder");
+      Alert.alert("錯誤", "請先選 folder");
+      return;
     }
 
     setFolderLogs([]);
@@ -192,12 +195,23 @@ export default function IndexScreen() {
 
     try {
       const res: any = await previewFolderSend(userId, selectedFolder.id);
-      const list = Array.isArray(res.data) ? res.data : [];
+      console.log("previewFolderSend res =", res);
+
+      const preview = res.data || {};
+      const list = Array.isArray(preview)
+        ? preview
+        : Array.isArray(preview.chats)
+          ? preview.chats
+          : [];
 
       setFolderChats(list);
 
       flog(`預覽目標數: ${list.length}`);
+      flog(`總數: ${preview.total ?? list.length}`);
+      flog(`包含: ${preview.included ?? list.length}`);
+      flog(`排除: ${preview.excluded ?? 0}`);
     } catch (e: any) {
+      console.error("previewFolderSend error:", e);
       flog(`預覽失敗: ${e?.message || "preview failed"}`);
       Alert.alert("錯誤", e?.message || "preview failed");
     }
