@@ -180,6 +180,29 @@ export default function IndexScreen() {
     flog(`載入 chats ${list.length}`);
   }
 
+  async function handlePreviewFolderSend() {
+    if (!selectedFolder) {
+      return Alert.alert("請選 folder");
+    }
+
+    setFolderLogs([]);
+    setFolderChats([]);
+
+    flog("載入發送預覽...");
+
+    try {
+      const res: any = await previewFolderSend(userId, selectedFolder.id);
+      const list = Array.isArray(res.data) ? res.data : [];
+
+      setFolderChats(list);
+
+      flog(`預覽目標數: ${list.length}`);
+    } catch (e: any) {
+      flog(`預覽失敗: ${e?.message || "preview failed"}`);
+      Alert.alert("錯誤", e?.message || "preview failed");
+    }
+  }
+
   async function handleSendFolder() {
     if (!selectedFolder) {
       return Alert.alert("請選 folder");
@@ -402,6 +425,7 @@ export default function IndexScreen() {
         })}
 
         <Btn title="Load Chats" onPress={handleLoadFolderChats} />
+        <Btn title="Preview Targets" onPress={handlePreviewFolderSend} />
 
         {folderChats.map((c) => (
           <Text key={c.chat_id} style={styles.log}>
