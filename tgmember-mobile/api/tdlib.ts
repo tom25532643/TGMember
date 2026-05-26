@@ -93,10 +93,6 @@ export async function getFolders(userId: string) {
   return requestJson(`${BASE}/folders/${userId}`);
 }
 
-export async function getFolderChats(userId: string, folderId: number) {
-  return requestJson(`${BASE}/folders/${userId}/${folderId}/chats`);
-}
-
 export async function previewFolderSend(
   userId: string,
   folderId: number,

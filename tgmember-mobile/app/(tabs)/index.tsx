@@ -18,7 +18,6 @@ import {
   getAllMembers,
   sendMessage,
   getFolders,
-  getFolderChats,
   sendFolder,
   previewFolderSend,
 } from "../../api/tdlib";
@@ -104,6 +103,20 @@ export default function IndexScreen() {
       ...current,
       [key]: !current[key],
     }));
+  }
+
+  function setAllFolderChatsSelected(selected: boolean) {
+    setSelectedFolderChatIds(
+      folderChats.reduce<Record<string, boolean>>((next, chat) => {
+        const chatId = getChatId(chat);
+
+        if (chatId !== undefined && chatId !== null) {
+          next[String(chatId)] = selected;
+        }
+
+        return next;
+      }, {}),
+    );
   }
 
   function getExcludedFolderChatIds() {
@@ -227,29 +240,6 @@ export default function IndexScreen() {
     setFolders(res.data || []);
     handleSelectFolder(null);
     log(`載入 folders ${res.data?.length}`);
-  }
-
-  async function handleLoadFolderChats() {
-    const folder = selectedFolder;
-
-    if (!folder) return;
-
-    const requestId = ++folderRequestSeq.current;
-    const folderId = folder.id;
-
-    setFolderChats([]);
-    setSelectedFolderChatIds({});
-    setFolderLogs([`Loading chats: ${folder.title || folder.name || folderId}`]);
-
-    const res: any = await getFolderChats(userId, folderId);
-
-    if (!isCurrentFolderRequest(requestId, folderId)) return;
-
-    const list = res.data || [];
-    setFolderChats(list);
-    selectAllFolderChats(list);
-
-    flog(`Loaded chats: ${list.length}`);
   }
 
   async function handlePreviewFolderSend() {
@@ -534,14 +524,29 @@ export default function IndexScreen() {
           );
         })}
 
-        <Btn title="Load Chats" onPress={handleLoadFolderChats} />
         <Btn title="Preview Targets" onPress={handlePreviewFolderSend} />
 
         {folderChats.length > 0 && (
-          <Text style={styles.itemSub}>
-            Selected {folderChats.length - getExcludedFolderChatIds().length} /{" "}
-            {folderChats.length}
-          </Text>
+          <View style={styles.chatSelectionHeader}>
+            <Text style={styles.itemSub}>
+              Selected {folderChats.length - getExcludedFolderChatIds().length} /{" "}
+              {folderChats.length}
+            </Text>
+            <View style={styles.chatSelectionActions}>
+              <TouchableOpacity
+                style={styles.smallButton}
+                onPress={() => setAllFolderChatsSelected(true)}
+              >
+                <Text style={styles.smallButtonText}>Select All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.smallButton}
+                onPress={() => setAllFolderChatsSelected(false)}
+              >
+                <Text style={styles.smallButtonText}>Select None</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
 
         {folderChats.map((c) => {
@@ -810,6 +815,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 4,
+  },
+  chatSelectionHeader: {
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  chatSelectionActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  smallButton: {
+    borderWidth: 1,
+    borderColor: "#1677ff",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  smallButtonText: {
+    color: "#1677ff",
+    fontSize: 12,
+    fontWeight: "600",
   },
   chatOption: {
     minHeight: 40,
