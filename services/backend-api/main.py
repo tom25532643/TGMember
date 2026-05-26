@@ -19,6 +19,8 @@ import crud
 import models
 import requests
 
+from config import load_settings
+
 app = FastAPI()
 
 app.add_middleware(
@@ -33,6 +35,9 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+
+
+settings = load_settings()
 
 
 def get_db():
@@ -165,8 +170,9 @@ def send_message_to_member(
         raise HTTPException(status_code=404, detail="Member not found")
 
     try:
+        target_url = f"{settings.tdlib_service_base_url}/messages/send"
         response = requests.post(
-            "http://127.0.0.1:8010/messages/send",
+            target_url,
             json={
                 "member_id": member_id,
                 "content": payload.content,
@@ -188,6 +194,8 @@ def send_message_to_member(
         return result
 
     except requests.RequestException as error:
+        error_type = type(error).__name__
+        timeout = isinstance(error, requests.Timeout)
         crud.create_message_log(
             db=db,
             member_id=member_id,
@@ -198,5 +206,10 @@ def send_message_to_member(
 
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to call tdlib-service: {error}",
+            detail={
+                "message": f"Failed to call tdlib-service: {error}",
+                "error_type": error_type,
+                "timeout": timeout,
+                "target_url": target_url,
+            },
         )
