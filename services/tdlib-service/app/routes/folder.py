@@ -6,6 +6,7 @@ from typing import Optional, List
 class SendFolderRequest(BaseModel):
     text: str
     exclude_types: Optional[List[str]] = None
+    exclude_chat_ids: Optional[List[int]] = None
     retry_failed: bool = True
 
 class GetFolderChatsPreviewRequest(BaseModel):
@@ -69,6 +70,7 @@ def send_folder(user_id: str, folder_id: int, body: SendFolderRequest):
             folder_id,
             text,
             exclude_types=body.exclude_types,
+            exclude_chat_ids=body.exclude_chat_ids,
             retry_failed=body.retry_failed
         )
     }

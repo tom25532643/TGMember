@@ -353,6 +353,7 @@ class TestFolderAPI:
             1,
             'Hello!',
             exclude_types=['chatTypeChannel', 'chatTypeBasicGroup'],
+            exclude_chat_ids=None,
             retry_failed=True
         )
 
@@ -375,7 +376,30 @@ class TestFolderAPI:
             1,
             'Hello!',
             exclude_types=None,
+            exclude_chat_ids=None,
             retry_failed=False
+        )
+
+    def test_send_to_folder_with_excluded_chat_ids(self):
+        user_id = "123456789"
+        self.create_mock_session(user_id)
+
+        resp = client.post(
+            f'/folders/{user_id}/1/send',
+            json={
+                'text': 'Hello!',
+                'exclude_chat_ids': [102],
+            }
+        )
+
+        assert resp.status_code == 200
+        session = session_manager.get(user_id)
+        session.send_to_folder.assert_called_with(
+            1,
+            'Hello!',
+            exclude_types=None,
+            exclude_chat_ids=[102],
+            retry_failed=True
         )
 
 
@@ -451,6 +475,40 @@ class TestFolderLogic:
             assert preview['chats'][0]['chat_id'] == 101
             assert preview['excluded_chats'][0]['chat_id'] == 102
             assert preview['excluded_chats'][1]['chat_id'] == 103
+
+    def test_send_to_folder_excludes_chat_ids(self):
+        session = TdAuthSession(
+            user_id="123",
+            api_id=123,
+            api_hash="abc",
+            tdjson_path=None
+        )
+
+        with patch.object(session, 'get_folder_chats_preview') as mock_preview, \
+                patch.object(session, 'send_text') as mock_send_text:
+            mock_preview.return_value = {
+                'total': 3,
+                'included': 3,
+                'excluded': 0,
+                'chats': [
+                    {'chat_id': 101, 'title': 'Chat A', 'type': 'chatTypePrivate'},
+                    {'chat_id': 102, 'title': 'Chat B', 'type': 'chatTypeChannel'},
+                    {'chat_id': 103, 'title': 'Chat C', 'type': 'chatTypeBasicGroup'},
+                ],
+                'excluded_chats': [],
+            }
+
+            result = session.send_to_folder(
+                1,
+                'Hello!',
+                exclude_chat_ids=[102],
+                retry_failed=False
+            )
+
+            assert result['total'] == 2
+            assert result['excluded'] == 1
+            assert result['success'] == 2
+            assert [call.kwargs['chat_id'] for call in mock_send_text.call_args_list] == [101, 103]
 
 
 class TestErrorHandling:

@@ -114,9 +114,13 @@ export async function sendFolder(
   userId: string,
   folderId: number,
   text: string,
+  excludeChatIds: Array<string | number> = [],
 ) {
   return requestJson(`${BASE}/folders/${userId}/${folderId}/send`, {
     method: "POST",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({
+      text,
+      exclude_chat_ids: excludeChatIds,
+    }),
   });
 }

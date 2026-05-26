@@ -85,9 +85,11 @@ class TestE2EFolderSending:
         session.get_folder_chats_preview.side_effect = mock_preview
         
         # Mock send to folder
-        def mock_send(folder_id, text, exclude_types=None, retry_failed=True):
+        def mock_send(folder_id, text, exclude_types=None, exclude_chat_ids=None, retry_failed=True):
             preview = mock_preview(folder_id, exclude_types)
             targets = preview['chats']
+            exclude_chat_ids = set(exclude_chat_ids or [])
+            targets = [t for t in targets if t['chat_id'] not in exclude_chat_ids]
             
             results = []
             for t in targets:

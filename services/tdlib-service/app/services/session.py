@@ -976,7 +976,14 @@ class TdAuthSession:
             'excluded_chats': excluded,
         }
 
-    def send_to_folder(self, folder_id: int, text: str, exclude_types: Optional[list[str]] = None, retry_failed: bool = True) -> dict:
+    def send_to_folder(
+        self,
+        folder_id: int,
+        text: str,
+        exclude_types: Optional[list[str]] = None,
+        exclude_chat_ids: Optional[list[int]] = None,
+        retry_failed: bool = True,
+    ) -> dict:
         """
         對 folder 內的所有 chats 發送訊息。
         
@@ -985,6 +992,19 @@ class TdAuthSession:
         """
         preview = self.get_folder_chats_preview(folder_id, exclude_types)
         targets = preview.get('chats', [])
+        excluded_chats = list(preview.get('excluded_chats', []))
+
+        if exclude_chat_ids:
+            excluded_chat_id_set = {int(chat_id) for chat_id in exclude_chat_ids}
+            selected_targets = []
+
+            for t in targets:
+                if int(t.get('chat_id')) in excluded_chat_id_set:
+                    excluded_chats.append(t)
+                else:
+                    selected_targets.append(t)
+
+            targets = selected_targets
 
         results = []
         success = 0
@@ -1041,7 +1061,7 @@ class TdAuthSession:
 
         return {
             'total': len(targets),
-            'excluded': len(preview.get('excluded_chats', [])),
+            'excluded': len(excluded_chats),
             'success': success,
             'failed': failed,
             'results': results,

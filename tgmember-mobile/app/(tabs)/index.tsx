@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -43,6 +43,9 @@ export default function IndexScreen() {
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
   const [folderChats, setFolderChats] = useState<any[]>([]);
+  const [selectedFolderChatIds, setSelectedFolderChatIds] = useState<
+    Record<string, boolean>
+  >({});
 
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<any>(null);
@@ -60,6 +63,62 @@ export default function IndexScreen() {
 
   const log = (msg: string) => setLogs((p) => [...p, msg]);
   const flog = (msg: string) => setFolderLogs((p) => [...p, msg]);
+  const folderRequestSeq = useRef(0);
+  const selectedFolderIdRef = useRef<number | null>(null);
+
+  function handleSelectFolder(folder: any | null) {
+    const folderId = folder?.id ?? null;
+
+    folderRequestSeq.current += 1;
+    selectedFolderIdRef.current = folderId;
+    setSelectedFolder(folder);
+    setFolderChats([]);
+    setSelectedFolderChatIds({});
+    setFolderLogs(
+      folder ? [`Selected folder: ${folder.title || folder.name || folder.id}`] : [],
+    );
+  }
+
+  function getChatId(chat: any) {
+    return chat.chat_id ?? chat.id;
+  }
+
+  function selectAllFolderChats(chats: any[]) {
+    setSelectedFolderChatIds(
+      chats.reduce<Record<string, boolean>>((next, chat) => {
+        const chatId = getChatId(chat);
+
+        if (chatId !== undefined && chatId !== null) {
+          next[String(chatId)] = true;
+        }
+
+        return next;
+      }, {}),
+    );
+  }
+
+  function toggleFolderChat(chatId: string | number) {
+    const key = String(chatId);
+
+    setSelectedFolderChatIds((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  }
+
+  function getExcludedFolderChatIds() {
+    return folderChats
+      .map(getChatId)
+      .filter((chatId) => chatId !== undefined && chatId !== null)
+      .filter((chatId) => !selectedFolderChatIds[String(chatId)]);
+  }
+
+  function isCurrentFolderRequest(requestId: number, folderId: number) {
+    return (
+      folderRequestSeq.current === requestId &&
+      selectedFolderIdRef.current === folderId
+    );
+  }
 
   async function run(
     fn: () => Promise<void>,
@@ -166,36 +225,55 @@ export default function IndexScreen() {
   async function handleLoadFolders() {
     const res: any = await getFolders(userId);
     setFolders(res.data || []);
+    handleSelectFolder(null);
     log(`載入 folders ${res.data?.length}`);
   }
 
   async function handleLoadFolderChats() {
-    if (!selectedFolder) return;
+    const folder = selectedFolder;
 
-    const res: any = await getFolderChats(userId, selectedFolder.id);
+    if (!folder) return;
+
+    const requestId = ++folderRequestSeq.current;
+    const folderId = folder.id;
+
+    setFolderChats([]);
+    setSelectedFolderChatIds({});
+    setFolderLogs([`Loading chats: ${folder.title || folder.name || folderId}`]);
+
+    const res: any = await getFolderChats(userId, folderId);
+
+    if (!isCurrentFolderRequest(requestId, folderId)) return;
 
     const list = res.data || [];
     setFolderChats(list);
+    selectAllFolderChats(list);
 
-    flog(`載入 chats ${list.length}`);
+    flog(`Loaded chats: ${list.length}`);
   }
 
   async function handlePreviewFolderSend() {
     console.log("Preview Targets clicked");
 
-    if (!selectedFolder) {
+    const folder = selectedFolder;
+
+    if (!folder) {
       Alert.alert("錯誤", "請先選 folder");
       return;
     }
 
-    setFolderLogs([]);
-    setFolderChats([]);
+    const requestId = ++folderRequestSeq.current;
+    const folderId = folder.id;
 
-    flog("載入發送預覽...");
+    setFolderChats([]);
+    setSelectedFolderChatIds({});
+    setFolderLogs([`Loading preview: ${folder.title || folder.name || folderId}`]);
 
     try {
-      const res: any = await previewFolderSend(userId, selectedFolder.id);
+      const res: any = await previewFolderSend(userId, folderId);
       console.log("previewFolderSend res =", res);
+
+      if (!isCurrentFolderRequest(requestId, folderId)) return;
 
       const preview = res.data || {};
       const list = Array.isArray(preview)
@@ -205,6 +283,7 @@ export default function IndexScreen() {
           : [];
 
       setFolderChats(list);
+      selectAllFolderChats(list);
 
       flog(`預覽目標數: ${list.length}`);
       flog(`總數: ${preview.total ?? list.length}`);
@@ -212,6 +291,8 @@ export default function IndexScreen() {
       flog(`排除: ${preview.excluded ?? 0}`);
     } catch (e: any) {
       console.error("previewFolderSend error:", e);
+
+      if (!isCurrentFolderRequest(requestId, folderId)) return;
       flog(`預覽失敗: ${e?.message || "preview failed"}`);
       Alert.alert("錯誤", e?.message || "preview failed");
     }
@@ -226,13 +307,28 @@ export default function IndexScreen() {
       return Alert.alert("請輸入訊息");
     }
 
+    const excludeChatIds = getExcludedFolderChatIds();
+    const selectedCount = folderChats.length - excludeChatIds.length;
+
+    if (folderChats.length > 0 && selectedCount === 0) {
+      return Alert.alert("錯誤", "請至少勾選一個 chat");
+    }
+
     setFolderSending(true);
     setFolderLogs([]);
 
     flog("開始發送 folder...");
 
+    flog(`Selected chats: ${folderChats.length > 0 ? selectedCount : "all"}`);
+    flog(`Skipped chats: ${excludeChatIds.length}`);
+
     try {
-      const res: any = await sendFolder(userId, selectedFolder.id, messageText);
+      const res: any = await sendFolder(
+        userId,
+        selectedFolder.id,
+        messageText,
+        excludeChatIds,
+      );
       const result = res.data || res;
 
       flog(`總數: ${result.total ?? 0}`);
@@ -430,7 +526,7 @@ export default function IndexScreen() {
             <TouchableOpacity
               key={f.id}
               style={[styles.item, selected && styles.selected]}
-              onPress={() => setSelectedFolder(f)}
+              onPress={() => handleSelectFolder(f)}
             >
               <Text style={styles.itemTitle}>{f.title || f.name}</Text>
               <Text style={styles.itemSub}>folder_id: {f.id}</Text>
@@ -441,11 +537,32 @@ export default function IndexScreen() {
         <Btn title="Load Chats" onPress={handleLoadFolderChats} />
         <Btn title="Preview Targets" onPress={handlePreviewFolderSend} />
 
-        {folderChats.map((c) => (
-          <Text key={c.chat_id} style={styles.log}>
-            {c.title} ({c.chat_id})
+        {folderChats.length > 0 && (
+          <Text style={styles.itemSub}>
+            Selected {folderChats.length - getExcludedFolderChatIds().length} /{" "}
+            {folderChats.length}
           </Text>
-        ))}
+        )}
+
+        {folderChats.map((c) => {
+          const chatId = getChatId(c);
+          const checked = selectedFolderChatIds[String(chatId)] !== false;
+
+          return (
+            <TouchableOpacity
+              key={String(chatId)}
+              style={styles.chatOption}
+              onPress={() => toggleFolderChat(chatId)}
+            >
+              <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                {checked ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+              <Text style={styles.chatOptionText}>
+                {c.title} ({chatId})
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
 
         <Label>Message</Label>
         <TextInput
@@ -693,6 +810,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 4,
+  },
+  chatOption: {
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 1,
+    borderColor: "#999",
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#1677ff",
+    borderColor: "#1677ff",
+  },
+  checkboxMark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+  chatOptionText: {
+    flex: 1,
+    fontSize: 12,
   },
   log: {
     fontSize: 12,
