@@ -97,6 +97,19 @@ export async function getFolderChats(userId: string, folderId: number) {
   return requestJson(`${BASE}/folders/${userId}/${folderId}/chats`);
 }
 
+export async function previewFolderSend(
+  userId: string,
+  folderId: number,
+  excludeTypes: string[] = [],
+) {
+  return requestJson(`${BASE}/folders/${userId}/${folderId}/preview`, {
+    method: "POST",
+    body: JSON.stringify({
+      exclude_types: excludeTypes,
+    }),
+  });
+}
+
 export async function sendFolder(
   userId: string,
   folderId: number,
