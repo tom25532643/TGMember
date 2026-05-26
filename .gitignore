@@ -1,3 +1,14 @@
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# Local databases
+*.db
+# Keep this explicit for clarity
+services/backend-api/tgmember.db
+
+# Existing project ignores
 services/tdlib-service/Release/
 services/tdlib-service/tdlib-data/
 tdlib-data/
