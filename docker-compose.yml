@@ -13,19 +13,13 @@ services:
     environment:
       TDJSON_LIBRARY: /app/lib/libtdjson.so
       TDLIB_DATA_ROOT: /app/tdlib-data
-
-      # Optional: override these values from a local .env file on NAS.
-      # If not set, tdlib-service/app/core/config.py will use its current defaults.
-      TG_API_ID: ${TG_API_ID:-}
-      TG_API_HASH: ${TG_API_HASH:-}
-
-      TDLIB_SYSTEM_LANGUAGE_CODE: ${TDLIB_SYSTEM_LANGUAGE_CODE:-en}
-      TDLIB_DEVICE_MODEL: ${TDLIB_DEVICE_MODEL:-TGMember}
-      TDLIB_SYSTEM_VERSION: ${TDLIB_SYSTEM_VERSION:-Linux}
-      TDLIB_APPLICATION_VERSION: ${TDLIB_APPLICATION_VERSION:-0.1.0}
-      TDLIB_LOG_VERBOSITY: ${TDLIB_LOG_VERBOSITY:-1}
-      SESSION_RESTORE_TIMEOUT: ${SESSION_RESTORE_TIMEOUT:-15}
-      SESSION_RESTORE_SCAN_PREFIX: ${SESSION_RESTORE_SCAN_PREFIX:-user_}
+      TDLIB_SYSTEM_LANGUAGE_CODE: en
+      TDLIB_DEVICE_MODEL: TGMember
+      TDLIB_SYSTEM_VERSION: Linux
+      TDLIB_APPLICATION_VERSION: 0.1.0
+      TDLIB_LOG_VERBOSITY: 1
+      SESSION_RESTORE_TIMEOUT: 15
+      SESSION_RESTORE_SCAN_PREFIX: user_
 
     volumes:
       - ./services/tdlib-service/tdlib-data:/app/tdlib-data
@@ -34,21 +28,94 @@ services:
     networks:
       - tgmember-net
 
-  cloudflared:
+  tgmember-backend-api:
+    build:
+      context: ./services/backend-api
+      dockerfile: Dockerfile
+    image: tgmember-backend-api:latest
+    container_name: tgmember-backend-api
+    restart: unless-stopped
+
+    ports:
+      - "8001:8001"
+
+    environment:
+      TDLIB_SERVICE_BASE_URL: http://tgmember-tdlib:8000
+
+    volumes:
+      - ./services/backend-api/tgmember.db:/app/tgmember.db
+
+    depends_on:
+      - tgmember-tdlib
+
+    networks:
+      - tgmember-net
+
+  tgmember-pwa:
+    build:
+      context: ./tgmember-mobile
+      dockerfile: Dockerfile
+    image: tgmember-pwa:latest
+    container_name: tgmember-pwa
+    restart: unless-stopped
+
+    ports:
+      - "8088:80"
+
+    depends_on:
+      - tgmember-backend-api
+      - tgmember-tdlib
+
+    networks:
+      - tgmember-net
+
+  cloudflared-tdlib:
     image: cloudflare/cloudflared:latest
-    container_name: tgmember-cloudflared
+    container_name: tgmember-cloudflared-tdlib
     restart: unless-stopped
 
     depends_on:
       - tgmember-tdlib
 
-    # Quick Tunnel mode.
-    # This avoids hard-coding Docker bridge IPs such as 172.17.x.x.
     command:
       - tunnel
       - --no-autoupdate
       - --url
       - http://tgmember-tdlib:8000
+
+    networks:
+      - tgmember-net
+
+  cloudflared-backend-api:
+    image: cloudflare/cloudflared:latest
+    container_name: tgmember-cloudflared-backend-api
+    restart: unless-stopped
+
+    depends_on:
+      - tgmember-backend-api
+
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --url
+      - http://tgmember-backend-api:8001
+
+    networks:
+      - tgmember-net
+
+  cloudflared-pwa:
+    image: cloudflare/cloudflared:latest
+    container_name: tgmember-cloudflared-pwa
+    restart: unless-stopped
+
+    depends_on:
+      - tgmember-pwa
+
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --url
+      - http://tgmember-pwa:80
 
     networks:
       - tgmember-net
