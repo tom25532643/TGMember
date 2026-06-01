@@ -12,3 +12,11 @@ services/backend-api/tgmember.db
 services/tdlib-service/Release/
 services/tdlib-service/tdlib-data/
 tdlib-data/
+
+# TDLib native binaries
+services/tdlib-service/lib/libtdjson.so*
+services/tdlib-service/lib/*.so*
+
+# Local environment files
+.env
+*.env
