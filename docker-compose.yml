@@ -69,53 +69,22 @@ services:
     networks:
       - tgmember-net
 
-  cloudflared-tdlib:
+  cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: tgmember-cloudflared-tdlib
+    container_name: tgmember-cloudflared
     restart: unless-stopped
 
     depends_on:
+      - tgmember-pwa
+      - tgmember-backend-api
       - tgmember-tdlib
 
     command:
       - tunnel
       - --no-autoupdate
-      - --url
-      - http://tgmember-tdlib:8000
-
-    networks:
-      - tgmember-net
-
-  cloudflared-backend-api:
-    image: cloudflare/cloudflared:latest
-    container_name: tgmember-cloudflared-backend-api
-    restart: unless-stopped
-
-    depends_on:
-      - tgmember-backend-api
-
-    command:
-      - tunnel
-      - --no-autoupdate
-      - --url
-      - http://tgmember-backend-api:8001
-
-    networks:
-      - tgmember-net
-
-  cloudflared-pwa:
-    image: cloudflare/cloudflared:latest
-    container_name: tgmember-cloudflared-pwa
-    restart: unless-stopped
-
-    depends_on:
-      - tgmember-pwa
-
-    command:
-      - tunnel
-      - --no-autoupdate
-      - --url
-      - http://tgmember-pwa:80
+      - run
+      - --token
+      - eyJhIjoiOWVlNmZjNGUzMjJkNzk1ZWVjZDllOWJkYWZjYjE4NTgiLCJ0IjoiMTJmMGRkOTQtMDA5MS00MTE2LWJhMTYtZDI3MDkxNTUxMmIwIiwicyI6IlpEVmtOalF3TlRrdFpEQmlNUzAwT0RnMkxUaGhOMll0WkdNM04yTmxaakV6WkdaaCJ9
 
     networks:
       - tgmember-net
