@@ -1,7 +1,9 @@
+const buildDir = process.env.WEB_BUILD_DIR || 'dist';
+
 module.exports = {
-  globDirectory: 'dist/',
+  globDirectory: `${buildDir}/`,
   globPatterns: ['**/*.{html,js,css,json,png,jpg,jpeg,svg,ico,webp,woff,woff2,ttf}'],
-  swDest: 'dist/service-worker.js',
+  swDest: `${buildDir}/service-worker.js`,
   cleanupOutdatedCaches: true,
   clientsClaim: true,
   skipWaiting: true,

@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
+pytest-cache-files-*/
 
 # Local databases
 *.db
@@ -20,3 +22,12 @@ services/tdlib-service/lib/*.so*
 # Local environment files
 .env
 *.env
+
+# Frontend dependencies and build output
+node_modules/
+tgmember-mobile/node_modules/
+tgmember-mobile/dist/
+tgmember-mobile/dist-*/
+
+# Large local toolchains
+vcpkg/

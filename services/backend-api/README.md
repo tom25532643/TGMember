@@ -1,32 +1,43 @@
-# backend-api 設定說明
+# backend-api
 
-## `TDLIB_SERVICE_BASE_URL`
+FastAPI service for TGMember CRM data. It stores members, groups, tags, notes, and message logs, and delegates Telegram message delivery to `tdlib-service`.
 
-`backend-api` 透過 `TDLIB_SERVICE_BASE_URL` 連到 tdlib-service。若未設定，預設值是：
+## Configuration
 
-- `http://127.0.0.1:8010`
+`TDLIB_SERVICE_BASE_URL` points to the TDLib service.
 
-啟動時會驗證 URL 格式，必須是合法的 `http`/`https` URL。
-
-### 本機開發
+Local default:
 
 ```bash
-export TDLIB_SERVICE_BASE_URL="http://127.0.0.1:8010"
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+TDLIB_SERVICE_BASE_URL=http://127.0.0.1:8000
 ```
 
-### Docker Compose（同 network service 名稱）
-
-```yaml
-services:
-  backend-api:
-    environment:
-      TDLIB_SERVICE_BASE_URL: http://tdlib-service:8010
-```
-
-### 遠端服務
+Docker Compose default:
 
 ```bash
-export TDLIB_SERVICE_BASE_URL="https://tdlib-service.example.com"
-uvicorn main:app --host 0.0.0.0 --port 8000
+TDLIB_SERVICE_BASE_URL=http://tgmember-tdlib:8000
+```
+
+## Run Locally
+
+```bash
+cd services/backend-api
+pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8001
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8001/health
+```
+
+## Database
+
+The local SQLite database is `tgmember.db`. It is ignored by git.
+
+To seed a fresh local database:
+
+```bash
+sqlite3 tgmember.db < seed.sql
 ```

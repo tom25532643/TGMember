@@ -21,12 +21,10 @@ import {
   sendFolder,
   previewFolderSend,
 } from "../../api/tdlib";
-
 import { storage, STORAGE_KEYS } from "../../api/storage";
 
 export default function IndexScreen() {
   const [screen, setScreen] = useState<Screen>("checking");
-
   const [loginKey, setLoginKey] = useState("");
   const [userId, setUserId] = useState("");
   const [phone, setPhone] = useState("");
@@ -38,6 +36,7 @@ export default function IndexScreen() {
   const [messageText, setMessageText] = useState("");
   const [maxCount, setMaxCount] = useState("1");
   const [logs, setLogs] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
 
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
@@ -45,25 +44,14 @@ export default function IndexScreen() {
   const [selectedFolderChatIds, setSelectedFolderChatIds] = useState<
     Record<string, boolean>
   >({});
-
-  const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<any>(null);
-  const [sendError, setSendError] = useState("");
-
   const [folderLogs, setFolderLogs] = useState<string[]>([]);
   const [folderSending, setFolderSending] = useState(false);
-  const [folderProgress, setFolderProgress] = useState({
-    current: 0,
-    total: 0,
-    success: 0,
-    failed: 0,
-    targetName: "",
-  });
 
-  const log = (msg: string) => setLogs((p) => [...p, msg]);
-  const flog = (msg: string) => setFolderLogs((p) => [...p, msg]);
   const folderRequestSeq = useRef(0);
   const selectedFolderIdRef = useRef<number | null>(null);
+
+  const log = (msg: string) => setLogs((current) => [...current, msg]);
+  const flog = (msg: string) => setFolderLogs((current) => [...current, msg]);
 
   function handleSelectFolder(folder: any | null) {
     const folderId = folder?.id ?? null;
@@ -139,10 +127,9 @@ export default function IndexScreen() {
   ) {
     try {
       await fn();
-    } catch (e: any) {
-      console.error(e);
-      const msg = e?.message || "未知錯誤";
-      Alert.alert("錯誤", msg);
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Error", error?.message || "Something went wrong.");
       setScreen(fallbackScreen);
     }
   }
@@ -186,7 +173,7 @@ export default function IndexScreen() {
     const key = loginKey.trim();
 
     if (!key) {
-      Alert.alert("錯誤", "請輸入 Login Key");
+      Alert.alert("Error", "Enter a login key.");
       return;
     }
 
@@ -231,24 +218,26 @@ export default function IndexScreen() {
 
       setGroups(list);
       setSelectedGroup(null);
-      log(`載入群組完成：${list.length} 個`);
+      log(`Loaded ${list.length} groups.`);
     }, "audience");
   }
 
   async function handleLoadFolders() {
-    const res: any = await getFolders(userId);
-    setFolders(res.data || []);
-    handleSelectFolder(null);
-    log(`載入 folders ${res.data?.length}`);
+    await run(async () => {
+      const res: any = await getFolders(userId);
+      const list = res.data || [];
+
+      setFolders(list);
+      handleSelectFolder(null);
+      log(`Loaded ${list.length} folders.`);
+    }, "folder");
   }
 
   async function handlePreviewFolderSend() {
-    console.log("Preview Targets clicked");
-
     const folder = selectedFolder;
 
     if (!folder) {
-      Alert.alert("錯誤", "請先選 folder");
+      Alert.alert("Error", "Select a folder first.");
       return;
     }
 
@@ -261,7 +250,6 @@ export default function IndexScreen() {
 
     try {
       const res: any = await previewFolderSend(userId, folderId);
-      console.log("previewFolderSend res =", res);
 
       if (!isCurrentFolderRequest(requestId, folderId)) return;
 
@@ -275,40 +263,42 @@ export default function IndexScreen() {
       setFolderChats(list);
       selectAllFolderChats(list);
 
-      flog(`預覽目標數: ${list.length}`);
-      flog(`總數: ${preview.total ?? list.length}`);
-      flog(`包含: ${preview.included ?? list.length}`);
-      flog(`排除: ${preview.excluded ?? 0}`);
-    } catch (e: any) {
-      console.error("previewFolderSend error:", e);
+      flog(`Preview targets: ${list.length}`);
+      flog(`Total: ${preview.total ?? list.length}`);
+      flog(`Included: ${preview.included ?? list.length}`);
+      flog(`Excluded: ${preview.excluded ?? 0}`);
+    } catch (error: any) {
+      console.error("previewFolderSend error:", error);
 
       if (!isCurrentFolderRequest(requestId, folderId)) return;
-      flog(`預覽失敗: ${e?.message || "preview failed"}`);
-      Alert.alert("錯誤", e?.message || "preview failed");
+      flog(`Preview failed: ${error?.message || "preview failed"}`);
+      Alert.alert("Error", error?.message || "Preview failed.");
     }
   }
 
   async function handleSendFolder() {
     if (!selectedFolder) {
-      return Alert.alert("請選 folder");
+      Alert.alert("Error", "Select a folder first.");
+      return;
     }
 
     if (!messageText.trim()) {
-      return Alert.alert("請輸入訊息");
+      Alert.alert("Error", "Enter a message.");
+      return;
     }
 
     const excludeChatIds = getExcludedFolderChatIds();
     const selectedCount = folderChats.length - excludeChatIds.length;
 
     if (folderChats.length > 0 && selectedCount === 0) {
-      return Alert.alert("錯誤", "請至少勾選一個 chat");
+      Alert.alert("Error", "Select at least one chat.");
+      return;
     }
 
     setFolderSending(true);
     setFolderLogs([]);
 
-    flog("開始發送 folder...");
-
+    flog("Starting folder send...");
     flog(`Selected chats: ${folderChats.length > 0 ? selectedCount : "all"}`);
     flog(`Skipped chats: ${excludeChatIds.length}`);
 
@@ -320,28 +310,24 @@ export default function IndexScreen() {
         excludeChatIds,
       );
       const result = res.data || res;
-
-      flog(`總數: ${result.total ?? 0}`);
-      flog(`成功: ${result.success ?? 0}`);
-      flog(`失敗: ${result.failed ?? 0}`);
-
       const results = result.results || [];
 
-      results.forEach((c: any) => {
-        if (c.ok) {
-          flog(`✔ ${c.title || c.chat_id}`);
-        } else {
-          flog(`❌ ${c.title || c.chat_id} ${c.error || ""}`);
-        }
+      flog(`Total: ${result.total ?? 0}`);
+      flog(`Success: ${result.success ?? 0}`);
+      flog(`Failed: ${result.failed ?? 0}`);
+
+      results.forEach((item: any) => {
+        const title = item.title || item.chat_id;
+        flog(item.ok ? `OK ${title}` : `Failed ${title} ${item.error || ""}`);
       });
 
       Alert.alert(
-        "完成",
-        `成功 ${result.success ?? 0} / 失敗 ${result.failed ?? 0}`,
+        "Send complete",
+        `Success ${result.success ?? 0} / Failed ${result.failed ?? 0}`,
       );
-    } catch (e: any) {
-      flog(`錯誤: ${e?.message || "發送失敗"}`);
-      Alert.alert("錯誤", e?.message || "發送失敗");
+    } catch (error: any) {
+      flog(`Error: ${error?.message || "Folder send failed."}`);
+      Alert.alert("Error", error?.message || "Folder send failed.");
     } finally {
       setFolderSending(false);
     }
@@ -349,66 +335,74 @@ export default function IndexScreen() {
 
   async function handleSendAudience() {
     if (!selectedGroup) {
-      Alert.alert("錯誤", "請先選群組");
+      Alert.alert("Error", "Select a group first.");
+      return;
+    }
+
+    if (!messageText.trim()) {
+      Alert.alert("Error", "Enter a message.");
       return;
     }
 
     const chatId = selectedGroup.chat_id || selectedGroup.id;
+    const requestedMax = Number.parseInt(maxCount, 10);
+    const limit = Number.isFinite(requestedMax) && requestedMax > 0 ? requestedMax : 1;
 
-    log("開始取得成員...");
+    setSending(true);
+    log("Loading group members...");
 
-    const membersRes: any = await getAllMembers(userId, chatId);
+    try {
+      const membersRes: any = await getAllMembers(userId, Number(chatId));
+      const allMembers = Array.isArray(membersRes)
+        ? membersRes
+        : Array.isArray(membersRes.data)
+          ? membersRes.data
+          : Array.isArray(membersRes.data?.members)
+            ? membersRes.data.members
+            : Array.isArray(membersRes.result)
+              ? membersRes.result
+              : [];
+      const members = allMembers.slice(0, limit);
 
-    console.log("membersRes =", membersRes);
-    log(`membersRes: ${JSON.stringify(membersRes)}`);
+      log(`Loaded ${allMembers.length} members. Sending to ${members.length}.`);
 
-    const members = Array.isArray(membersRes)
-      ? membersRes
-      : Array.isArray(membersRes.data)
-        ? membersRes.data
-        : Array.isArray(membersRes.data?.members)
-          ? membersRes.data.members
-          : Array.isArray(membersRes.result)
-            ? membersRes.result
-            : [];
+      let success = 0;
+      let failed = 0;
 
-    log(`取得 ${members.length} 個成員`);
+      for (let i = 0; i < members.length; i++) {
+        const member = members[i];
+        const targetName =
+          member.display_name ||
+          member.name ||
+          [member.first_name, member.last_name].filter(Boolean).join(" ") ||
+          member.username ||
+          String(member.user_id || member.id);
+        const targetChatId = Number(member.user_id || member.id);
 
-    log(`取得 ${members.length} 個成員`);
+        try {
+          log(`Sending ${i + 1}/${members.length}: ${targetName}`);
+          await sendMessage(userId, targetChatId, messageText);
+          success++;
+          log(`OK ${targetName}`);
+        } catch (error) {
+          console.error(error);
+          failed++;
+          log(`Failed ${targetName}`);
+        }
 
-    let success = 0;
-    let failed = 0;
-
-    for (let i = 0; i < members.length; i++) {
-      const m = members[i];
-
-      const targetName =
-        m.display_name ||
-        m.name ||
-        [m.first_name, m.last_name].filter(Boolean).join(" ") ||
-        m.username ||
-        String(m.user_id || m.id);
-
-      const targetChatId = m.user_id || m.id;
-
-      try {
-        log(`正在發送給：${targetName}`);
-        await sendMessage(userId, targetChatId, messageText);
-
-        success++;
-        log(`✔ ${i + 1}/${members.length} ${targetName}`);
-      } catch (e) {
-        failed++;
-        log(`❌ ${i + 1}/${members.length} ${targetName}`);
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       }
 
-      // 🔥 防封：延遲
-      await new Promise((r) => setTimeout(r, 1500));
+      log(`Complete. success=${success} failed=${failed}`);
+      Alert.alert("Send complete", `Success ${success} / Failed ${failed}`);
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Error", error?.message || "Audience send failed.");
+    } finally {
+      setSending(false);
     }
-
-    log(`完成 success=${success} failed=${failed}`);
-    Alert.alert("完成", `成功 ${success} / 失敗 ${failed}`);
   }
+
   if (screen === "checking") {
     return <Center text="Checking..." />;
   }
@@ -423,7 +417,7 @@ export default function IndexScreen() {
           onChangeText={setLoginKey}
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="例如 tom123"
+          placeholder="Example: tom123"
         />
         <Btn title="Login" onPress={login} />
       </Page>
@@ -432,8 +426,10 @@ export default function IndexScreen() {
 
   if (screen === "session_missing") {
     return (
-      <Page title="TDLib Session 不存在">
-        <Text style={styles.info}>TDLib session 不存在，請聯絡開發人員。</Text>
+      <Page title="TDLib Session Missing">
+        <Text style={styles.info}>
+          No TDLib session exists for this user. Start login again to create one.
+        </Text>
         <Btn title="Back" onPress={() => setScreen("login")} />
       </Page>
     );
@@ -482,20 +478,20 @@ export default function IndexScreen() {
   if (screen === "home") {
     return (
       <Page title="TGMember">
-        <Text style={styles.subtitle}>Telegram 成員管理與群發工具</Text>
+        <Text style={styles.subtitle}>Telegram workflow tools</Text>
         <Text style={styles.info}>User ID: {userId}</Text>
 
         <HomeCard
-          title="群組群發"
-          description="選擇 Telegram folder / 對話群組，將訊息送到多個群組或對話。"
-          actionText="進入群組群發"
+          title="Folder Send"
+          description="Select a Telegram folder, preview target chats, and send a message."
+          actionText="Open Folder Send"
           onPress={() => setScreen("folder")}
         />
 
         <HomeCard
-          title="對話群發"
-          description="從指定群組抓取成員，對成員逐一發送訊息。"
-          actionText="進入對話群發"
+          title="Audience Send"
+          description="Select a Telegram group and send messages to a limited member audience."
+          actionText="Open Audience Send"
           onPress={() => setScreen("audience")}
         />
       </Page>
@@ -504,22 +500,21 @@ export default function IndexScreen() {
 
   if (screen === "folder") {
     return (
-      <Page title="群組群發">
+      <Page title="Folder Send">
         <Btn title="Back" onPress={() => setScreen("home")} />
-
         <Btn title="Load Folders" onPress={handleLoadFolders} />
 
-        {folders.map((f) => {
-          const selected = selectedFolder && selectedFolder.id === f.id;
+        {folders.map((folder) => {
+          const selected = selectedFolder && selectedFolder.id === folder.id;
 
           return (
             <TouchableOpacity
-              key={f.id}
+              key={folder.id}
               style={[styles.item, selected && styles.selected]}
-              onPress={() => handleSelectFolder(f)}
+              onPress={() => handleSelectFolder(folder)}
             >
-              <Text style={styles.itemTitle}>{f.title || f.name}</Text>
-              <Text style={styles.itemSub}>folder_id: {f.id}</Text>
+              <Text style={styles.itemTitle}>{folder.title || folder.name}</Text>
+              <Text style={styles.itemSub}>folder_id: {folder.id}</Text>
             </TouchableOpacity>
           );
         })}
@@ -549,8 +544,8 @@ export default function IndexScreen() {
           </View>
         )}
 
-        {folderChats.map((c) => {
-          const chatId = getChatId(c);
+        {folderChats.map((chat) => {
+          const chatId = getChatId(chat);
           const checked = selectedFolderChatIds[String(chatId)] !== false;
 
           return (
@@ -560,10 +555,10 @@ export default function IndexScreen() {
               onPress={() => toggleFolderChat(chatId)}
             >
               <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                {checked ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                {checked ? <Text style={styles.checkboxMark}>OK</Text> : null}
               </View>
               <Text style={styles.chatOptionText}>
-                {c.title} ({chatId})
+                {chat.title} ({chatId})
               </Text>
             </TouchableOpacity>
           );
@@ -575,7 +570,7 @@ export default function IndexScreen() {
           multiline
           value={messageText}
           onChangeText={setMessageText}
-          placeholder="message"
+          placeholder="Message"
         />
 
         {folderSending ? (
@@ -590,9 +585,9 @@ export default function IndexScreen() {
         )}
 
         <Text style={styles.section}>Folder Logs</Text>
-        {folderLogs.map((l, i) => (
-          <Text key={i} style={styles.log}>
-            {l}
+        {folderLogs.map((entry, index) => (
+          <Text key={index} style={styles.log}>
+            {entry}
           </Text>
         ))}
       </Page>
@@ -601,12 +596,12 @@ export default function IndexScreen() {
 
   if (screen === "audience") {
     return (
-      <Page title="對話群發">
+      <Page title="Audience Send">
         <Btn title="Back" onPress={() => setScreen("home")} />
         <Btn title="Load Groups" onPress={handleLoadGroups} />
 
-        {groups.map((g) => {
-          const id = g.chat_id || g.id;
+        {groups.map((group) => {
+          const id = group.chat_id || group.id;
           const selected =
             selectedGroup && (selectedGroup.chat_id || selectedGroup.id) === id;
 
@@ -614,10 +609,10 @@ export default function IndexScreen() {
             <TouchableOpacity
               key={String(id)}
               style={[styles.item, selected && styles.selected]}
-              onPress={() => setSelectedGroup(g)}
+              onPress={() => setSelectedGroup(group)}
             >
               <Text style={styles.itemTitle}>
-                {g.title || g.name || `Group ${id}`}
+                {group.title || group.name || `Group ${id}`}
               </Text>
               <Text style={styles.itemSub}>chat_id: {String(id)}</Text>
             </TouchableOpacity>
@@ -630,7 +625,7 @@ export default function IndexScreen() {
           multiline
           value={messageText}
           onChangeText={setMessageText}
-          placeholder="輸入要群發的訊息"
+          placeholder="Message"
         />
 
         <Label>Max Count</Label>
@@ -652,27 +647,10 @@ export default function IndexScreen() {
           <Btn title="Start Audience Send" onPress={handleSendAudience} />
         )}
 
-        {sendResult && (
-          <View style={styles.resultBox}>
-            <Text style={styles.resultTitle}>Send Result</Text>
-            <Text style={styles.resultText}>
-              {JSON.stringify(sendResult, null, 2)}
-            </Text>
-          </View>
-        )}
-
-        {sendError ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorTitle}>Send Failed</Text>
-            <Text style={styles.errorText}>{sendError}</Text>
-            <Btn title="Retry" onPress={handleSendAudience} />
-          </View>
-        ) : null}
-
         <Text style={styles.section}>Logs</Text>
-        {logs.map((l, i) => (
-          <Text key={i} style={styles.log}>
-            {l}
+        {logs.map((entry, index) => (
+          <Text key={index} style={styles.log}>
+            {entry}
           </Text>
         ))}
       </Page>
@@ -779,7 +757,7 @@ const styles = StyleSheet.create({
   homeCard: {
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 16,
     marginBottom: 14,
     backgroundColor: "#fff",
@@ -845,7 +823,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   checkbox: {
-    width: 22,
+    width: 26,
     height: 22,
     borderWidth: 1,
     borderColor: "#999",
@@ -859,9 +837,9 @@ const styles = StyleSheet.create({
   },
   checkboxMark: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: "700",
-    lineHeight: 18,
+    lineHeight: 14,
   },
   chatOptionText: {
     flex: 1,
@@ -884,33 +862,5 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 12,
     color: "#555",
-  },
-  resultBox: {
-    padding: 12,
-    borderRadius: 6,
-    backgroundColor: "#ecfdf5",
-    marginVertical: 8,
-  },
-  resultTitle: {
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  resultText: {
-    fontSize: 12,
-  },
-  errorBox: {
-    padding: 12,
-    borderRadius: 6,
-    backgroundColor: "#fef2f2",
-    marginVertical: 8,
-  },
-  errorTitle: {
-    fontWeight: "700",
-    color: "#991b1b",
-    marginBottom: 4,
-  },
-  errorText: {
-    fontSize: 12,
-    color: "#991b1b",
   },
 });

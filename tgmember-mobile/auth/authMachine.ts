@@ -45,11 +45,13 @@ async function startTdlibSession(userId: string) {
   });
 }
 
-export async function resolveScreen(loginKey: string): Promise<ResolveScreenResult> {
+export async function resolveScreen(
+  loginKey: string,
+): Promise<ResolveScreenResult> {
   const member = await lookupMember(loginKey);
 
   if (!member) {
-    throw new Error("無此帳號，請聯絡開發人員協助開通");
+    throw new Error("Login key was not found in the CRM service.");
   }
 
   const tdlibUserId = String(member.id);
