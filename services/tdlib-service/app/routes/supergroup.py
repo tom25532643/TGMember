@@ -25,6 +25,24 @@ def list_supergroups(user_id: str):
     }
 
 
+
+
+@router.get('/{user_id}/admin')
+def list_admin_supergroups(user_id: str):
+    session = session_manager.get(user_id)
+    if not session:
+        raise HTTPException(status_code=404, detail='Session not found')
+
+    try:
+        data = session.get_admin_supergroups()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {
+        'ok': True,
+        'data': data
+    }
+
 @router.get('/{user_id}/{chat_id}/members')
 def get_members(user_id: str, chat_id: int):
     session = session_manager.get(user_id)
@@ -76,3 +94,4 @@ def send_to_members(user_id: str, chat_id: int, body: SendMembersRequest):
         "ok": True,
         "data": result
     }
+

@@ -654,6 +654,40 @@ class TdAuthSession:
 
         return result
     
+
+    def get_admin_supergroups(self, limit: int = 100) -> list[dict]:
+        me = self.get_me() or {}
+        my_user_id = me.get('id')
+        if not my_user_id:
+            raise ValueError('Unable to resolve current Telegram user')
+
+        result = []
+        for group in self.get_supergroups(limit=limit):
+            chat_id = group.get('chat_id')
+            if not chat_id:
+                continue
+
+            try:
+                member = self.client.request({
+                    '@type': 'getChatMember',
+                    'chat_id': chat_id,
+                    'member_id': {
+                        '@type': 'messageSenderUser',
+                        'user_id': my_user_id,
+                    },
+                }, timeout=10)
+            except Exception:
+                continue
+
+            status = (member.get('status') or {}).get('@type')
+            if status in {'chatMemberStatusAdministrator', 'chatMemberStatusCreator'}:
+                item = dict(group)
+                item['my_status'] = status
+                item['is_admin'] = True
+                result.append(item)
+
+        return result
+
     def get_supergroup_members_preview(self, chat_id: int, limit: int = 200) -> dict:
         return self.get_all_supergroup_members(
             chat_id=chat_id,

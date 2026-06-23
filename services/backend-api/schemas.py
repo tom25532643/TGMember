@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -61,3 +63,34 @@ class SendMessageResponse(BaseModel):
     member_id: int
     content: str
     result: str
+
+class TelegramMemberSyncItem(BaseModel):
+    telegram_user_id: int
+    display_name: str | None = None
+    username: str | None = None
+
+
+class TelegramMemberExpirationSyncRequest(BaseModel):
+    owner_user_id: str
+    chat_id: int
+    members: list[TelegramMemberSyncItem]
+
+
+class TelegramMemberExpirationUpdateRequest(BaseModel):
+    expiration_date: str | None = None
+
+
+class TelegramMemberExpiration(BaseModel):
+    id: int
+    owner_user_id: str
+    chat_id: int
+    telegram_user_id: int
+    display_name: str | None = None
+    username: str | None = None
+    first_seen_at: datetime
+    expiration_date: str | None = None
+
+    class Config:
+        from_attributes = True
+
+

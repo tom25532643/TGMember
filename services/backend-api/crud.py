@@ -6,6 +6,7 @@ from models import (
     MemberTagModel,
     MemberNoteModel,
     MessageLogModel,
+    TelegramMemberExpirationModel,
 )
 
 
@@ -122,3 +123,86 @@ def create_message_log(db: Session, member_id: int, direction: str, content: str
     db.commit()
     db.refresh(row)
     return row
+
+def list_telegram_member_expirations(db: Session, owner_user_id: str, chat_id: int):
+    return (
+        db.query(TelegramMemberExpirationModel)
+        .filter(
+            TelegramMemberExpirationModel.owner_user_id == owner_user_id,
+            TelegramMemberExpirationModel.chat_id == chat_id,
+        )
+        .order_by(TelegramMemberExpirationModel.display_name.asc())
+        .all()
+    )
+
+
+def get_telegram_member_expiration(
+    db: Session,
+    owner_user_id: str,
+    chat_id: int,
+    telegram_user_id: int,
+):
+    return (
+        db.query(TelegramMemberExpirationModel)
+        .filter(
+            TelegramMemberExpirationModel.owner_user_id == owner_user_id,
+            TelegramMemberExpirationModel.chat_id == chat_id,
+            TelegramMemberExpirationModel.telegram_user_id == telegram_user_id,
+        )
+        .first()
+    )
+
+
+def sync_telegram_member_expirations(db: Session, owner_user_id: str, chat_id: int, members: list[dict]):
+    for member in members:
+        telegram_user_id = int(member["telegram_user_id"])
+        row = get_telegram_member_expiration(
+            db=db,
+            owner_user_id=owner_user_id,
+            chat_id=chat_id,
+            telegram_user_id=telegram_user_id,
+        )
+
+        if not row:
+            row = TelegramMemberExpirationModel(
+                owner_user_id=owner_user_id,
+                chat_id=chat_id,
+                telegram_user_id=telegram_user_id,
+            )
+            db.add(row)
+
+        row.display_name = member.get("display_name")
+        row.username = member.get("username")
+
+    db.commit()
+    return list_telegram_member_expirations(db, owner_user_id, chat_id)
+
+
+def update_telegram_member_expiration(
+    db: Session,
+    owner_user_id: str,
+    chat_id: int,
+    telegram_user_id: int,
+    expiration_date: str | None,
+):
+    row = get_telegram_member_expiration(
+        db=db,
+        owner_user_id=owner_user_id,
+        chat_id=chat_id,
+        telegram_user_id=telegram_user_id,
+    )
+
+    if not row:
+        row = TelegramMemberExpirationModel(
+            owner_user_id=owner_user_id,
+            chat_id=chat_id,
+            telegram_user_id=telegram_user_id,
+        )
+        db.add(row)
+
+    row.expiration_date = expiration_date
+    db.commit()
+    db.refresh(row)
+    return row
+
+

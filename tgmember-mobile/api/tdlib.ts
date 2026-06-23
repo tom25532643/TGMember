@@ -41,6 +41,10 @@ export async function loadSupergroups(userId: string) {
   return requestJson(`${BASE}/supergroups/${userId}`);
 }
 
+export async function loadAdminSupergroups(userId: string) {
+  return requestJson(`${BASE}/supergroups/${userId}/admin`);
+}
+
 export async function sendToSupergroupMembers(
   userId: string,
   chatId: string | number,
@@ -56,8 +60,14 @@ export async function sendToSupergroupMembers(
   });
 }
 
-export async function getAllMembers(userId: string, chatId: number) {
-  return requestJson(`${BASE}/supergroups/${userId}/${chatId}/members/all`);
+export async function getAllMembers(
+  userId: string,
+  chatId: number,
+  maxPages = 10,
+) {
+  return requestJson(
+    `${BASE}/supergroups/${userId}/${chatId}/members/all?max_pages=${maxPages}`,
+  );
 }
 
 export async function sendToOneUser(
@@ -120,3 +130,5 @@ export async function sendFolder(
     }),
   });
 }
+
+

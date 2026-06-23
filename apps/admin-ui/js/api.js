@@ -58,6 +58,16 @@ window.tdlibApi = {
       `${TDLIB_BASE}/chats/${encodeURIComponent(userId)}?limit=${limit}`,
     );
   },
+
+  getAdminSupergroups(userId) {
+    return httpJson(`${TDLIB_BASE}/supergroups/${encodeURIComponent(userId)}/admin`);
+  },
+
+  getAllSupergroupMembers(userId, chatId, maxPages = 10) {
+    return httpJson(
+      `${TDLIB_BASE}/supergroups/${encodeURIComponent(userId)}/${encodeURIComponent(chatId)}/members/all?max_pages=${maxPages}`,
+    );
+  },
 };
 
 window.backendApi = {
@@ -67,5 +77,32 @@ window.backendApi = {
 
   getGroups() {
     return httpJson(`${BACKEND_BASE}/groups`);
+  },
+
+  getTelegramMemberExpirations(ownerUserId, chatId) {
+    return httpJson(
+      `${BACKEND_BASE}/telegram-member-expirations/${encodeURIComponent(ownerUserId)}/${encodeURIComponent(chatId)}`,
+    );
+  },
+
+  syncTelegramMemberExpirations(ownerUserId, chatId, members) {
+    return httpJson(`${BACKEND_BASE}/telegram-member-expirations/sync`, {
+      method: "POST",
+      body: JSON.stringify({
+        owner_user_id: ownerUserId,
+        chat_id: Number(chatId),
+        members,
+      }),
+    });
+  },
+
+  updateTelegramMemberExpiration(ownerUserId, chatId, telegramUserId, expirationDate) {
+    return httpJson(
+      `${BACKEND_BASE}/telegram-member-expirations/${encodeURIComponent(ownerUserId)}/${encodeURIComponent(chatId)}/${encodeURIComponent(telegramUserId)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ expiration_date: expirationDate }),
+      },
+    );
   },
 };

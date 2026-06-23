@@ -1,4 +1,6 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from database import Base
 
 
@@ -57,3 +59,26 @@ class MessageLogModel(Base):
     direction = Column(String, nullable=False)   # outbound / inbound
     content = Column(String, nullable=False)
     status = Column(String, nullable=False)      # sent / failed / received
+
+class TelegramMemberExpirationModel(Base):
+    __tablename__ = "telegram_member_expirations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_user_id = Column(String, nullable=False, index=True)
+    chat_id = Column(BigInteger, nullable=False, index=True)
+    telegram_user_id = Column(BigInteger, nullable=False, index=True)
+    display_name = Column(String, nullable=True)
+    username = Column(String, nullable=True)
+    first_seen_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    expiration_date = Column(String, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "owner_user_id",
+            "chat_id",
+            "telegram_user_id",
+            name="uq_telegram_member_expiration",
+        ),
+    )
+
+

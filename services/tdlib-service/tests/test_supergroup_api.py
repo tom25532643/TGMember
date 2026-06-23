@@ -27,6 +27,31 @@ def test_list_supergroups(monkeypatch):
     assert len(data["data"]) == 1
 
 
+
+def test_list_admin_supergroups(monkeypatch):
+    fake_session = Mock()
+    fake_session.get_admin_supergroups.return_value = [
+        {
+            "chat_id": -1001,
+            "title": "Managed Group",
+            "supergroup_id": 123,
+            "is_channel": False,
+            "is_admin": True,
+            "my_status": "chatMemberStatusAdministrator",
+        }
+    ]
+
+    monkeypatch.setattr(session_manager, "get", lambda user_id: fake_session)
+
+    resp = client.get("/supergroups/1/admin")
+    assert resp.status_code == 200
+
+    data = resp.json()
+    assert data["ok"] is True
+    assert len(data["data"]) == 1
+    assert data["data"][0]["is_admin"] is True
+
+
 def test_get_members_preview(monkeypatch):
     fake_session = Mock()
     fake_session.get_supergroup_members_preview.return_value = {

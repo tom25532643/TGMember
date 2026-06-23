@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TGMember - 私群成員管理</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, "Microsoft JhengHei", sans-serif;
+        background: #f6f7f9;
+        color: #222;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 22px;
+        background: #fff;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .container {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 22px;
+      }
+
+      .panel {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 18px;
+      }
+
+      .panel h2 {
+        margin: 0 0 14px;
+        font-size: 16px;
+      }
+
+      .toolbar,
+      .filters,
+      .pagination {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      input,
+      select,
+      button {
+        font-size: 14px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #cfd6df;
+        background: #fff;
+      }
+
+      input,
+      select {
+        min-height: 20px;
+      }
+
+      button {
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      button.primary {
+        background: #0f766e;
+        color: #fff;
+        border-color: #0f766e;
+      }
+
+      button.secondary {
+        background: #eef2f7;
+      }
+
+      button.danger {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #be123c;
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .group-list {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+        max-height: 560px;
+        overflow-y: auto;
+      }
+
+      .group-item {
+        padding: 12px;
+        border-bottom: 1px solid #edf0f3;
+        cursor: pointer;
+      }
+
+      .group-item:last-child {
+        border-bottom: none;
+      }
+
+      .group-item:hover,
+      .group-item.active {
+        background: #ecfeff;
+      }
+
+      .group-title {
+        font-weight: 700;
+        margin-bottom: 5px;
+        word-break: break-word;
+      }
+
+      .muted,
+      .meta {
+        color: #667085;
+        font-size: 13px;
+      }
+
+      .message {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        display: none;
+      }
+
+      .message.info {
+        display: block;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+      }
+
+      .message.error {
+        display: block;
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #edf0f3;
+        padding: 10px;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        font-size: 12px;
+        color: #475467;
+        background: #f8fafc;
+      }
+
+      .member-name {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .status {
+        display: inline-block;
+        min-width: 54px;
+        text-align: center;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .status.unset { background: #f2f4f7; color: #475467; }
+      .status.active { background: #dcfce7; color: #166534; }
+      .status.expired { background: #fee2e2; color: #991b1b; }
+      .status.forever { background: #e0f2fe; color: #075985; }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .actions button {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+
+      .empty {
+        padding: 28px;
+        text-align: center;
+        color: #667085;
+        border: 1px dashed #cfd6df;
+        border-radius: 8px;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        table,
+        thead,
+        tbody,
+        tr,
+        th,
+        td {
+          display: block;
+        }
+
+        thead {
+          display: none;
+        }
+
+        tr {
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          margin-bottom: 10px;
+          overflow: hidden;
+        }
+
+        td {
+          border-bottom: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <h1>私群成員管理</h1>
+      <button class="secondary" id="backBtn">回首頁</button>
+    </div>
+
+    <div class="container">
+      <div class="panel">
+        <div class="toolbar">
+          <label>
+            TDLib 使用者 ID
+            <input id="userIdInput" type="text" placeholder="例如 1" />
+          </label>
+          <label>
+            讀取頁數
+            <input id="maxPagesInput" type="number" min="1" max="50" value="10" />
+          </label>
+          <button class="primary" id="loadGroupsBtn">載入可管理私群</button>
+          <button class="secondary" id="refreshMembersBtn" disabled>同步成員</button>
+        </div>
+        <div id="messageBox" class="message"></div>
+      </div>
+
+      <div class="layout">
+        <div class="panel">
+          <h2>可管理私群</h2>
+          <div id="groupList" class="group-list">
+            <div class="empty">尚未載入群組</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 id="memberTitle">成員</h2>
+          <div class="filters" style="margin-bottom: 12px;">
+            <input id="searchInput" type="search" placeholder="搜尋名稱、username、user id" />
+            <select id="statusFilter">
+              <option value="all">全部狀態</option>
+              <option value="unset">未設定</option>
+              <option value="active">有效</option>
+              <option value="expired">已到期</option>
+              <option value="forever">永久</option>
+            </select>
+            <select id="pageSizeSelect">
+              <option value="20">每頁 20</option>
+              <option value="50">每頁 50</option>
+              <option value="100">每頁 100</option>
+            </select>
+          </div>
+
+          <div id="summary" class="muted" style="margin-bottom: 10px;">請先選擇私群</div>
+          <div id="tableWrap"><div class="empty">尚未載入成員</div></div>
+          <div class="pagination" style="margin-top: 12px;">
+            <button class="secondary" id="prevPageBtn">上一頁</button>
+            <span id="pageText" class="muted">第 1 / 1 頁</span>
+            <button class="secondary" id="nextPageBtn">下一頁</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/member-expirations.js"></script>
+  </body>
+</html>

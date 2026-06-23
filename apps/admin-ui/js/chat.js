@@ -534,6 +534,27 @@ async function init() {
 
   currentUserId = userId;
 
+  const backBtn = document.getElementById("backBtn");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+  }
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await window.tdlibApi?.closeSession?.(userId);
+      } catch (err) {
+        console.warn("closeSession failed", err);
+      }
+
+      localStorage.removeItem("user_id");
+      window.location.replace("login.html");
+    });
+  }
+
   const loadMoreBtn = document.getElementById("loadMoreChatsBtn");
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", loadMoreChats);

@@ -15,12 +15,20 @@ import {
   sendCode,
   sendPassword,
   loadSupergroups,
+  loadAdminSupergroups,
+  getAllMembers,
   sendToSupergroupMembers,
   getFolders,
   sendFolder,
   previewFolderSend,
 } from "../../api/tdlib";
 import { storage, STORAGE_KEYS } from "../../api/storage";
+import {
+  syncTelegramMemberExpirations,
+  updateTelegramMemberExpiration,
+} from "../../api/crm";
+
+const FOREVER_DATE = "2099-12-31";
 
 export default function IndexScreen() {
   const [screen, setScreen] = useState<Screen>("checking");
@@ -37,6 +45,15 @@ export default function IndexScreen() {
   const [logs, setLogs] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
 
+  const [managedGroups, setManagedGroups] = useState<any[]>([]);
+  const [selectedManagedGroup, setSelectedManagedGroup] = useState<any>(null);
+  const [managedMembers, setManagedMembers] = useState<any[]>([]);
+  const [expirationRecords, setExpirationRecords] = useState<Record<string, any>>({});
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberStatusFilter, setMemberStatusFilter] = useState("all");
+  const [memberLogs, setMemberLogs] = useState<string[]>([]);
+  const [memberLoading, setMemberLoading] = useState(false);
+
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
   const [folderChats, setFolderChats] = useState<any[]>([]);
@@ -51,6 +68,70 @@ export default function IndexScreen() {
 
   const log = (msg: string) => setLogs((current) => [...current, msg]);
   const flog = (msg: string) => setFolderLogs((current) => [...current, msg]);
+
+  const mlog = (msg: string) => setMemberLogs((current) => [...current, msg]);
+
+  function todayDateOnly() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+
+  function dateOnly(value: string) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  function addMonths(months: number) {
+    const date = new Date();
+    const day = date.getDate();
+    date.setMonth(date.getMonth() + months);
+    if (date.getDate() !== day) {
+      date.setDate(0);
+    }
+    return date.toISOString().slice(0, 10);
+  }
+
+  function getExpirationStatus(record: any) {
+    const expiration = record?.expiration_date;
+    if (!expiration) return "unset";
+    if (expiration === FOREVER_DATE) return "forever";
+    return dateOnly(expiration) < todayDateOnly() ? "expired" : "active";
+  }
+
+  function statusLabel(status: string) {
+    const labels: Record<string, string> = {
+      all: "All",
+      unset: "Unset",
+      active: "Active",
+      expired: "Expired",
+      forever: "Forever",
+    };
+    return labels[status] || status;
+  }
+
+  function statusStyle(status: string) {
+    if (status === "active") return styles.statusActive;
+    if (status === "expired") return styles.statusExpired;
+    if (status === "forever") return styles.statusForever;
+    return styles.statusUnset;
+  }
+
+  function filteredManagedMembers() {
+    const query = memberSearch.trim().toLowerCase();
+
+    return managedMembers.filter((member) => {
+      const record = expirationRecords[String(member.user_id)];
+      const status = getExpirationStatus(record);
+      const haystack = [member.display_name, member.username, member.user_id]
+        .join(" ")
+        .toLowerCase();
+
+      return (
+        (!query || haystack.includes(query)) &&
+        (memberStatusFilter === "all" || status === memberStatusFilter)
+      );
+    });
+  }
 
   function handleSelectFolder(folder: any | null) {
     const folderId = folder?.id ?? null;
@@ -208,6 +289,107 @@ export default function IndexScreen() {
       await sendPassword(userId, password);
       await resolveAndApplyScreen(loginKey || userId);
     });
+  }
+
+  async function handleLoadManagedGroups() {
+    await run(async () => {
+      const data: any = await loadAdminSupergroups(userId);
+      const list = Array.isArray(data) ? data : data.data || data.result || [];
+
+      setManagedGroups(list);
+      setSelectedManagedGroup(null);
+      setManagedMembers([]);
+      setExpirationRecords({});
+      setMemberLogs([`Loaded ${list.length} managed groups.`]);
+    }, "memberManagement");
+  }
+
+  async function handleSelectManagedGroup(group: any) {
+    setSelectedManagedGroup(group);
+    setManagedMembers([]);
+    setExpirationRecords({});
+    setMemberLogs([`Selected group: ${group.title || group.chat_id}`]);
+    await handleLoadManagedMembers(group);
+  }
+
+  async function handleLoadManagedMembers(groupArg?: any) {
+    const group = groupArg || selectedManagedGroup;
+
+    if (!group) {
+      Alert.alert("Error", "Select a group first.");
+      return;
+    }
+
+    setMemberLoading(true);
+
+    try {
+      const chatId = group.chat_id || group.id;
+      const result: any = await getAllMembers(userId, Number(chatId), 10);
+      const members = result.data?.members || [];
+      const syncItems = members.map((member: any) => ({
+        telegram_user_id: Number(member.user_id),
+        display_name: member.display_name || null,
+        username: member.username || null,
+      }));
+      const records: any = await syncTelegramMemberExpirations(
+        userId,
+        chatId,
+        syncItems,
+      );
+
+      setManagedMembers(members);
+      setExpirationRecords(
+        records.reduce((next: Record<string, any>, record: any) => {
+          next[String(record.telegram_user_id)] = record;
+          return next;
+        }, {}),
+      );
+      mlog(`Synced ${members.length} members.`);
+    } catch (error: any) {
+      console.error(error);
+      mlog(`Sync failed: ${error?.message || "unknown error"}`);
+      Alert.alert("Error", error?.message || "Member sync failed.");
+    } finally {
+      setMemberLoading(false);
+    }
+  }
+
+  async function handleUpdateMemberExpiration(
+    telegramUserId: string | number,
+    action: "one-month" | "three-months" | "forever" | "clear",
+  ) {
+    const group = selectedManagedGroup;
+
+    if (!group) {
+      Alert.alert("Error", "Select a group first.");
+      return;
+    }
+
+    const expirationDate = {
+      "one-month": addMonths(1),
+      "three-months": addMonths(3),
+      forever: FOREVER_DATE,
+      clear: null,
+    }[action];
+
+    try {
+      const chatId = group.chat_id || group.id;
+      const record: any = await updateTelegramMemberExpiration(
+        userId,
+        chatId,
+        telegramUserId,
+        expirationDate,
+      );
+
+      setExpirationRecords((current) => ({
+        ...current,
+        [String(record.telegram_user_id)]: record,
+      }));
+      mlog(`Updated user ${telegramUserId}.`);
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Error", error?.message || "Expiration update failed.");
+    }
   }
 
   async function handleLoadGroups() {
@@ -466,6 +648,13 @@ export default function IndexScreen() {
           actionText="Open Audience Send"
           onPress={() => setScreen("audience")}
         />
+
+        <HomeCard
+          title="Private Group Members"
+          description="Manage expiration dates for members in Telegram groups where you are an admin."
+          actionText="Open Member Management"
+          onPress={() => setScreen("memberManagement")}
+        />
       </Page>
     );
   }
@@ -558,6 +747,141 @@ export default function IndexScreen() {
 
         <Text style={styles.section}>Folder Logs</Text>
         {folderLogs.map((entry, index) => (
+          <Text key={index} style={styles.log}>
+            {entry}
+          </Text>
+        ))}
+      </Page>
+    );
+  }
+
+  if (screen === "memberManagement") {
+    const visibleMembers = filteredManagedMembers();
+
+    return (
+      <Page title="Private Group Members">
+        <Btn title="Back" onPress={() => setScreen("home")} />
+        <Btn title="Load Managed Groups" onPress={handleLoadManagedGroups} />
+
+        {managedGroups.map((group) => {
+          const id = group.chat_id || group.id;
+          const selected =
+            selectedManagedGroup &&
+            (selectedManagedGroup.chat_id || selectedManagedGroup.id) === id;
+
+          return (
+            <TouchableOpacity
+              key={String(id)}
+              style={[styles.item, selected && styles.selected]}
+              onPress={() => handleSelectManagedGroup(group)}
+            >
+              <Text style={styles.itemTitle}>
+                {group.title || group.name || `Group ${id}`}
+              </Text>
+              <Text style={styles.itemSub}>chat_id: {String(id)}</Text>
+              <Text style={styles.itemSub}>
+                {group.is_channel ? "Channel" : "Group"} ? {group.my_status || "admin"}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+
+        {selectedManagedGroup && (
+          <Btn
+            title={memberLoading ? "Syncing Members..." : "Sync Members"}
+            onPress={() => handleLoadManagedMembers()}
+          />
+        )}
+
+        <Label>Search Members</Label>
+        <TextInput
+          style={styles.input}
+          value={memberSearch}
+          onChangeText={setMemberSearch}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="Name, username, or user id"
+        />
+
+        <Text style={styles.section}>Status Filter</Text>
+        <View style={styles.filterRow}>
+          {["all", "unset", "active", "expired", "forever"].map((status) => (
+            <TouchableOpacity
+              key={status}
+              style={[
+                styles.filterChip,
+                memberStatusFilter === status && styles.filterChipActive,
+              ]}
+              onPress={() => setMemberStatusFilter(status)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  memberStatusFilter === status && styles.filterChipTextActive,
+                ]}
+              >
+                {statusLabel(status)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.itemSub}>
+          Members {visibleMembers.length} / {managedMembers.length}. Join time: unknown.
+        </Text>
+
+        {visibleMembers.map((member) => {
+          const record = expirationRecords[String(member.user_id)];
+          const status = getExpirationStatus(record);
+          const username = member.username ? `@${member.username}` : "No username";
+
+          return (
+            <View key={String(member.user_id)} style={styles.memberCard}>
+              <Text style={styles.itemTitle}>
+                {member.display_name || member.user_id}
+              </Text>
+              <Text style={styles.itemSub}>{username}</Text>
+              <Text style={styles.itemSub}>user_id: {member.user_id}</Text>
+              <Text style={styles.itemSub}>Join time: unknown</Text>
+              <Text style={styles.itemSub}>
+                Expiration: {record?.expiration_date || "Unset"}
+              </Text>
+              <Text style={[styles.statusBadge, statusStyle(status)]}>
+                {statusLabel(status)}
+              </Text>
+
+              <View style={styles.quickActions}>
+                <TouchableOpacity
+                  style={styles.smallButton}
+                  onPress={() => handleUpdateMemberExpiration(member.user_id, "one-month")}
+                >
+                  <Text style={styles.smallButtonText}>1M</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.smallButton}
+                  onPress={() => handleUpdateMemberExpiration(member.user_id, "three-months")}
+                >
+                  <Text style={styles.smallButtonText}>3M</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.smallButton}
+                  onPress={() => handleUpdateMemberExpiration(member.user_id, "forever")}
+                >
+                  <Text style={styles.smallButtonText}>Forever</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.smallButton, styles.dangerButton]}
+                  onPress={() => handleUpdateMemberExpiration(member.user_id, "clear")}
+                >
+                  <Text style={[styles.smallButtonText, styles.dangerButtonText]}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+
+        <Text style={styles.section}>Member Logs</Text>
+        {memberLogs.map((entry, index) => (
           <Text key={index} style={styles.log}>
             {entry}
           </Text>
@@ -816,6 +1140,78 @@ const styles = StyleSheet.create({
   chatOptionText: {
     flex: 1,
     fontSize: 12,
+  },
+  filterRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginVertical: 8,
+  },
+  filterChip: {
+    borderWidth: 1,
+    borderColor: "#cfd6df",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  filterChipActive: {
+    backgroundColor: "#1677ff",
+    borderColor: "#1677ff",
+  },
+  filterChipText: {
+    color: "#333",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  filterChipTextActive: {
+    color: "#fff",
+  },
+  memberCard: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 6,
+    backgroundColor: "#fff",
+  },
+  statusBadge: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    marginBottom: 8,
+    borderRadius: 999,
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  statusUnset: {
+    backgroundColor: "#f2f4f7",
+    color: "#475467",
+  },
+  statusActive: {
+    backgroundColor: "#dcfce7",
+    color: "#166534",
+  },
+  statusExpired: {
+    backgroundColor: "#fee2e2",
+    color: "#991b1b",
+  },
+  statusForever: {
+    backgroundColor: "#e0f2fe",
+    color: "#075985",
+  },
+  quickActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  dangerButton: {
+    borderColor: "#be123c",
+  },
+  dangerButtonText: {
+    color: "#be123c",
   },
   log: {
     fontSize: 12,

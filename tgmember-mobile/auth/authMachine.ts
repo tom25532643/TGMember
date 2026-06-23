@@ -12,7 +12,8 @@ export type Screen =
   | "password"
   | "home"
   | "audience"
-  | "folder";
+  | "folder"
+  | "memberManagement";
 
 export type ResolveScreenResult = {
   screen: Screen;

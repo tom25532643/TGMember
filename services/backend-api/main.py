@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -14,6 +16,9 @@ from schemas import (
     MessageLogCreate,
     SendMessageRequest,
     SendMessageResponse,
+    TelegramMemberExpiration,
+    TelegramMemberExpirationSyncRequest,
+    TelegramMemberExpirationUpdateRequest,
 )
 import crud
 import models
@@ -52,6 +57,58 @@ def get_db():
 def health():
     return {"status": "ok"}
 
+
+
+
+@app.get(
+    "/telegram-member-expirations/{owner_user_id}/{chat_id}",
+    response_model=list[TelegramMemberExpiration],
+)
+def get_telegram_member_expirations(owner_user_id: str, chat_id: int, db: Session = Depends(get_db)):
+    return crud.list_telegram_member_expirations(db, owner_user_id, chat_id)
+
+
+@app.post(
+    "/telegram-member-expirations/sync",
+    response_model=list[TelegramMemberExpiration],
+)
+def sync_telegram_member_expirations(
+    payload: TelegramMemberExpirationSyncRequest,
+    db: Session = Depends(get_db),
+):
+    members = [member.dict() for member in payload.members]
+    return crud.sync_telegram_member_expirations(
+        db=db,
+        owner_user_id=payload.owner_user_id,
+        chat_id=payload.chat_id,
+        members=members,
+    )
+
+
+@app.put(
+    "/telegram-member-expirations/{owner_user_id}/{chat_id}/{telegram_user_id}",
+    response_model=TelegramMemberExpiration,
+)
+def update_telegram_member_expiration(
+    owner_user_id: str,
+    chat_id: int,
+    telegram_user_id: int,
+    payload: TelegramMemberExpirationUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    if payload.expiration_date:
+        try:
+            datetime.strptime(payload.expiration_date, "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="expiration_date must be YYYY-MM-DD")
+
+    return crud.update_telegram_member_expiration(
+        db=db,
+        owner_user_id=owner_user_id,
+        chat_id=chat_id,
+        telegram_user_id=telegram_user_id,
+        expiration_date=payload.expiration_date,
+    )
 
 @app.get("/members", response_model=list[Member])
 def get_members(db: Session = Depends(get_db)):
@@ -213,3 +270,5 @@ def send_message_to_member(
                 "target_url": target_url,
             },
         )
+
+

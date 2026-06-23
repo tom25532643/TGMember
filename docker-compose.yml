@@ -51,6 +51,21 @@ services:
     networks:
       - tgmember-net
 
+
+  tgmember-admin-ui:
+    image: nginx:alpine
+    container_name: tgmember-admin-ui
+    restart: unless-stopped
+
+    ports:
+      - "8089:80"
+
+    volumes:
+      - ./apps/admin-ui:/usr/share/nginx/html:ro
+
+    networks:
+      - tgmember-net
+
   tgmember-pwa:
     build:
       context: ./tgmember-mobile
@@ -76,6 +91,7 @@ services:
 
     depends_on:
       - tgmember-pwa
+      - tgmember-admin-ui
       - tgmember-backend-api
       - tgmember-tdlib
 
