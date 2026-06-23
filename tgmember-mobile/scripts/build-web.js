@@ -1,4 +1,5 @@
 const { spawnSync } = require("node:child_process");
+const fs = require("node:fs");
 const path = require("node:path");
 
 const isWindows = process.platform === "win32";
@@ -32,6 +33,19 @@ function run(command, args, extraEnv = {}) {
   }
 }
 
+function writeVersionFile() {
+  const version = process.env.APP_VERSION || `${Date.now()}`;
+  const payload = {
+    version,
+    built_at: new Date().toISOString(),
+  };
+  const target = path.join(outputDir, "version.json");
+
+  fs.writeFileSync(target, `${JSON.stringify(payload, null, 2)}
+`, "utf8");
+  console.log(`Wrote ${path.resolve(target)} version=${version}`);
+}
+
 const exportArgs = ["expo", "export", "-p", "web", "--output-dir", outputDir];
 
 if (maxWorkers) {
@@ -40,6 +54,7 @@ if (maxWorkers) {
 
 console.log(`Exporting TGMember web app to ${path.resolve(outputDir)}`);
 run(npx, exportArgs);
+writeVersionFile();
 
 run(
   npx,

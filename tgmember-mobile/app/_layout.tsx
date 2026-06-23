@@ -5,8 +5,10 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { registerServiceWorker } from '../utils/register-service-worker';
+import { registerVersionCheck } from '../utils/version-check';
 
 registerServiceWorker();
+registerVersionCheck();
 
 export const unstable_settings = {
   anchor: '(tabs)',
