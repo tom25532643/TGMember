@@ -147,6 +147,14 @@ function renderGroups() {
   });
 }
 
+function matchesStatusFilter(status, filter) {
+  if (filter === "all") return true;
+  if (filter === "active") {
+    return status === "active" || status === "forever";
+  }
+  return status === filter;
+}
+
 function filteredMembers() {
   const query = searchInput.value.trim().toLowerCase();
   const filter = statusFilter.value;
@@ -160,7 +168,7 @@ function filteredMembers() {
       member.user_id,
     ].join(" ").toLowerCase();
 
-    return (!query || haystack.includes(query)) && (filter === "all" || status === filter);
+    return (!query || haystack.includes(query)) && matchesStatusFilter(status, filter);
   });
 }
 

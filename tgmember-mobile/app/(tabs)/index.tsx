@@ -109,6 +109,14 @@ export default function IndexScreen() {
     return labels[status] || status;
   }
 
+  function matchesMemberStatusFilter(status: string) {
+    if (memberStatusFilter === "all") return true;
+    if (memberStatusFilter === "active") {
+      return status === "active" || status === "forever";
+    }
+    return status === memberStatusFilter;
+  }
+
   function statusStyle(status: string) {
     if (status === "active") return styles.statusActive;
     if (status === "expired") return styles.statusExpired;
@@ -128,7 +136,7 @@ export default function IndexScreen() {
 
       return (
         (!query || haystack.includes(query)) &&
-        (memberStatusFilter === "all" || status === memberStatusFilter)
+        matchesMemberStatusFilter(status)
       );
     });
   }
