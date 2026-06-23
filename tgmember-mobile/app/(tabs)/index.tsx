@@ -15,8 +15,7 @@ import {
   sendCode,
   sendPassword,
   loadSupergroups,
-  getAllMembers,
-  sendMessage,
+  sendToSupergroupMembers,
   getFolders,
   sendFolder,
   previewFolderSend,
@@ -349,52 +348,25 @@ export default function IndexScreen() {
     const limit = Number.isFinite(requestedMax) && requestedMax > 0 ? requestedMax : 1;
 
     setSending(true);
-    log("Loading group members...");
+    log(`Starting audience send. Max count: ${limit}.`);
 
     try {
-      const membersRes: any = await getAllMembers(userId, Number(chatId));
-      const allMembers = Array.isArray(membersRes)
-        ? membersRes
-        : Array.isArray(membersRes.data)
-          ? membersRes.data
-          : Array.isArray(membersRes.data?.members)
-            ? membersRes.data.members
-            : Array.isArray(membersRes.result)
-              ? membersRes.result
-              : [];
-      const members = allMembers.slice(0, limit);
+      const response: any = await sendToSupergroupMembers(
+        userId,
+        chatId,
+        messageText,
+        limit,
+      );
+      const result = response?.data || response;
+      const targeted = result?.targeted ?? 0;
+      const success = result?.success ?? 0;
+      const failed = result?.failed ?? 0;
 
-      log(`Loaded ${allMembers.length} members. Sending to ${members.length}.`);
-
-      let success = 0;
-      let failed = 0;
-
-      for (let i = 0; i < members.length; i++) {
-        const member = members[i];
-        const targetName =
-          member.display_name ||
-          member.name ||
-          [member.first_name, member.last_name].filter(Boolean).join(" ") ||
-          member.username ||
-          String(member.user_id || member.id);
-        const targetChatId = Number(member.user_id || member.id);
-
-        try {
-          log(`Sending ${i + 1}/${members.length}: ${targetName}`);
-          await sendMessage(userId, targetChatId, messageText);
-          success++;
-          log(`OK ${targetName}`);
-        } catch (error) {
-          console.error(error);
-          failed++;
-          log(`Failed ${targetName}`);
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-
-      log(`Complete. success=${success} failed=${failed}`);
-      Alert.alert("Send complete", `Success ${success} / Failed ${failed}`);
+      log(`Complete. targeted=${targeted} success=${success} failed=${failed}`);
+      Alert.alert(
+        "Send complete",
+        `Targeted ${targeted} / Success ${success} / Failed ${failed}`,
+      );
     } catch (error: any) {
       console.error(error);
       Alert.alert("Error", error?.message || "Audience send failed.");

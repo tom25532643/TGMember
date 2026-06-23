@@ -819,7 +819,7 @@ class TdAuthSession:
         )
 
         members = preview.get('members', []) or []
-        max_count = max(1, min(int(max_count), 100))
+        max_count = max(1, min(int(max_count), 200))
         targets = members[:max_count]
 
         success = 0
