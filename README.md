@@ -75,6 +75,35 @@ npm run lint
 npm run typecheck
 ```
 
+## Mobile API Targets
+
+The PWA defaults to production DNS:
+
+```text
+https://tdlib.tgmembertools.com
+https://api.tgmembertools.com
+```
+
+For local PC development:
+
+```bash
+cd tgmember-mobile
+EXPO_PUBLIC_API_TARGET=local npm run web
+```
+
+For NAS LAN testing, create `tgmember-mobile/.env`:
+
+```env
+EXPO_PUBLIC_API_TARGET=nas
+EXPO_PUBLIC_NAS_HOST=192.168.1.10
+```
+
+You can also override URLs directly:
+
+```env
+EXPO_PUBLIC_TDLIB_BASE_URL=https://tdlib.tgmembertools.com
+EXPO_PUBLIC_CRM_BASE_URL=https://api.tgmembertools.com
+```
 ## Notes
 
 - Local databases, TDLib session data, build output, pytest caches, `node_modules`, and local toolchains are ignored by git.

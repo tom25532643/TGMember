@@ -17,8 +17,8 @@ const CHAT_LIMIT_MAX = 2000;
 const MESSAGE_PAGE_SIZE = 50;
 const AUTO_FILL_OLDER_MAX_PAGES = 5;
 
-const API_BASE = "http://127.0.0.1:8000";
-const WS_BASE = "ws://127.0.0.1:8000";
+const API_BASE = window.TGMEMBER_CONFIG.TDLIB_BASE;
+const WS_BASE = window.TGMEMBER_CONFIG.TDLIB_WS_BASE;
 
 console.log("chat.js FINAL version loaded");
 
@@ -239,7 +239,11 @@ async function loadMessages(userId, chatId, chatTitle = "") {
   }
 
   try {
-    const rawMessages = await fetchMessagesWithRetry(userId, chatId, MESSAGE_PAGE_SIZE);
+    const rawMessages = await fetchMessagesWithRetry(
+      userId,
+      chatId,
+      MESSAGE_PAGE_SIZE,
+    );
 
     messageStore[key] = [];
     const messages = mergeMessages(chatId, rawMessages);
@@ -314,7 +318,11 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchMessagesWithRetry(userId, chatId, limit = MESSAGE_PAGE_SIZE) {
+async function fetchMessagesWithRetry(
+  userId,
+  chatId,
+  limit = MESSAGE_PAGE_SIZE,
+) {
   let lastData = [];
 
   for (let i = 0; i < 3; i++) {
@@ -388,7 +396,9 @@ async function sendCurrentMessage() {
 
     if (!res.ok || data.ok === false) {
       const detail = data.detail || data.error || data;
-      throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      throw new Error(
+        typeof detail === "string" ? detail : JSON.stringify(detail),
+      );
     }
 
     if (input) {

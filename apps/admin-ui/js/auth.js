@@ -1,8 +1,7 @@
-const BASE = "http://127.0.0.1:8000";
+const BASE = window.TGMEMBER_CONFIG.TDLIB_BASE;
 
 function log(msg) {
-  document.getElementById("log").textContent =
-    JSON.stringify(msg, null, 2);
+  document.getElementById("log").textContent = JSON.stringify(msg, null, 2);
 }
 
 function getUserId() {
@@ -14,14 +13,18 @@ async function start() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      user_id: getUserId()
-    })
+      user_id: getUserId(),
+    }),
   });
 
   const data = await res.json();
   log(data);
 
-  if (data.ok && data.data && data.data.auth_state === "authorizationStateReady") {
+  if (
+    data.ok &&
+    data.data &&
+    data.data.auth_state === "authorizationStateReady"
+  ) {
     localStorage.setItem("user_id", getUserId());
     alert("Login success!");
     window.location.href = "index.html";
@@ -34,8 +37,8 @@ async function sendPhone() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: getUserId(),
-      phone_number: document.getElementById("phone").value
-    })
+      phone_number: document.getElementById("phone").value,
+    }),
   });
 
   const data = await res.json();
@@ -48,8 +51,8 @@ async function sendCode() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: getUserId(),
-      code: document.getElementById("code").value
-    })
+      code: document.getElementById("code").value,
+    }),
   });
 
   const data = await res.json();
@@ -64,8 +67,8 @@ async function sendPassword() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: getUserId(),
-      password: document.getElementById("password").value
-    })
+      password: document.getElementById("password").value,
+    }),
   });
 
   const data = await res.json();

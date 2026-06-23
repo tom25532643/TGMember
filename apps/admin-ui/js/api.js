@@ -1,5 +1,5 @@
-const TDLIB_BASE = "http://127.0.0.1:8000";
-const BACKEND_BASE = "http://127.0.0.1:8001"; // 這裡換成你的 backend-api port
+const TDLIB_BASE = window.TGMEMBER_CONFIG.TDLIB_BASE;
+const BACKEND_BASE = window.TGMEMBER_CONFIG.BACKEND_BASE;
 
 async function httpJson(url, options = {}) {
   const res = await fetch(url, {
@@ -54,7 +54,9 @@ window.tdlibApi = {
   },
 
   getChats(userId, limit = 20) {
-    return httpJson(`${TDLIB_BASE}/chats/${encodeURIComponent(userId)}?limit=${limit}`);
+    return httpJson(
+      `${TDLIB_BASE}/chats/${encodeURIComponent(userId)}?limit=${limit}`,
+    );
   },
 };
 
