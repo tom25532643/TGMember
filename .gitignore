@@ -31,3 +31,4 @@ tgmember-mobile/dist-*/
 
 # Large local toolchains
 vcpkg/
+services/tdlib-service/tdlib-data-disabled/
