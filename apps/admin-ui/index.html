@@ -3,33 +3,54 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TGMember</title>
+    <title>TGMember Admin</title>
+    <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-1" />
   </head>
   <body>
-    <h2>TGMember</h2>
-
-    <div><strong>User ID:</strong> <span id="userIdText">-</span></div>
-    <div><strong>Auth State:</strong> <span id="authStateText">-</span></div>
-
-    <button id="logoutBtn">Logout</button>
-
-    <hr />
-
-    <h3>Members</h3>
-    <pre id="membersBox">Loading...</pre>
-
-    <h3>Groups</h3>
-    <pre id="groupsBox">Loading...</pre>
-
-    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap">
-      <button onclick="window.location.href = 'chat.html'">Open Chat</button>
-      <button onclick="window.location.href = 'folder-send.html'">Box Send</button>
-      <button onclick="window.location.href = 'audience-send.html'">Group Send</button>
-      <button onclick="window.location.href = 'member-expirations.html'">私群成員管理</button>
+    <div class="topbar">
+      <h1>TGMember Admin</h1>
+      <button id="logoutBtn" class="secondary">Logout</button>
     </div>
 
-    <script src="js/config.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/index.js"></script>
+    <main class="container">
+      <section class="panel">
+        <h2>Session</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">User ID</div>
+            <div class="stat-value" id="userIdText">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Auth State</div>
+            <div class="stat-value" id="authStateText">-</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Tools</h2>
+        <div class="btn-row">
+          <button class="primary" onclick="window.location.href = 'members.html'">Members / Login Keys</button>
+          <button onclick="window.location.href = 'chat.html'">Open Chat</button>
+          <button onclick="window.location.href = 'folder-send.html'">Box Send</button>
+          <button onclick="window.location.href = 'audience-send.html'">Group Send</button>
+          <button onclick="window.location.href = 'member-expirations.html'">Member Expirations</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Members</h2>
+        <pre id="membersBox">Loading...</pre>
+      </section>
+
+      <section class="panel">
+        <h2>Groups</h2>
+        <pre id="groupsBox">Loading...</pre>
+      </section>
+    </main>
+
+    <script src="js/config.js?v=20260624-admin-style-1"></script>
+    <script src="js/api.js?v=20260624-admin-style-1"></script>
+    <script src="js/index.js?v=20260624-admin-style-1"></script>
   </body>
 </html>
