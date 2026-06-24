@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import (
     MemberModel,
@@ -19,11 +20,63 @@ def get_member_by_id(db: Session, member_id: int):
 
 
 def get_member_by_username(db: Session, username: str):
-    return db.query(MemberModel).filter(MemberModel.username == username).first()
+    return get_member_by_login_key(db, username)
 
+
+
+def normalize_login_key(login_key: str):
+    return login_key.strip()
+
+
+def validate_login_key(login_key: str, member_id: int | None = None):
+    normalized = normalize_login_key(login_key)
+
+    if not normalized:
+        raise ValueError("Login key is required")
+
+    if len(normalized) < 8:
+        raise ValueError("Login key must be at least 8 characters")
+
+    if normalized.isdigit():
+        raise ValueError("Login key cannot be only numbers")
+
+    if member_id is not None and normalized == str(member_id):
+        raise ValueError("Login key cannot match the User ID")
+
+    return normalized
+
+
+def get_member_by_login_key(db: Session, login_key: str):
+    normalized = normalize_login_key(login_key)
+    if not normalized:
+        return None
+    return (
+        db.query(MemberModel)
+        .filter(func.lower(MemberModel.username) == normalized.lower())
+        .first()
+    )
+
+
+def update_member_login_key(db: Session, member_id: int, login_key: str):
+    member = get_member_by_id(db, member_id)
+    if not member:
+        return None
+
+    normalized = validate_login_key(login_key, member_id=member_id)
+    existing = get_member_by_login_key(db, normalized)
+    if existing and existing.id != member_id:
+        raise ValueError("Login key is already in use")
+
+    member.username = normalized
+    db.commit()
+    db.refresh(member)
+    return member
 
 def create_member(db: Session, name: str, username: str):
-    member = MemberModel(name=name, username=username)
+    normalized = validate_login_key(username)
+    if get_member_by_login_key(db, normalized):
+        raise ValueError("Login key is already in use")
+    member = MemberModel(name=name, username=normalized)
     db.add(member)
     db.commit()
     db.refresh(member)

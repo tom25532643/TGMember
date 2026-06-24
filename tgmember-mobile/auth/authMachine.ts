@@ -13,7 +13,8 @@ export type Screen =
   | "home"
   | "audience"
   | "folder"
-  | "memberManagement";
+  | "memberManagement"
+  | "settings";
 
 export type ResolveScreenResult = {
   screen: Screen;
@@ -52,7 +53,7 @@ export async function resolveScreen(
   const member = await lookupMember(loginKey);
 
   if (!member) {
-    throw new Error("Login key was not found in the CRM service.");
+    throw new Error("No such account. Please contact the developer.");
   }
 
   const tdlibUserId = String(member.id);

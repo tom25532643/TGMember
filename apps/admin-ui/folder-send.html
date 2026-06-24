@@ -282,6 +282,7 @@
       font-weight: 500;
     }
   </style>
+  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-1" />
 </head>
 <body>
   <div class="topbar">
@@ -387,8 +388,9 @@
     </div>
   </div>
 
+  <script src="js/config.js?v=20260624-login-flow"></script>
   <script>
-    const API_BASE = 'http://127.0.0.1:8000';
+    const API_BASE = window.TGMEMBER_CONFIG.TDLIB_BASE;
 
     function goIndex() {
       window.location.replace('index.html');

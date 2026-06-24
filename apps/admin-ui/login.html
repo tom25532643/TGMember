@@ -1,39 +1,57 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login</title>
-  </head>
+    <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-1" />
+</head>
   <body>
-    <h2>Telegram Login</h2>
+    <main class="login-shell">
+      <h2>Telegram Login</h2>
 
-    <div>
-      <label>User ID:</label>
-      <input id="userId" value="1" />
-    </div>
+      <p id="memberSummary" class="muted"></p>
+      <p id="status" class="muted" role="status"></p>
+      <p id="error" class="error" role="alert"></p>
 
-    <div>
-      <label>Phone:</label>
-      <input id="phone" placeholder="+886..." />
-    </div>
+      <section id="loginPanel">
+        <form id="loginForm">
+          <label for="loginKey">Login Key</label>
+          <input id="loginKey" autocomplete="username" placeholder="Login Key" />
+          <button type="submit">Continue</button>
+        </form>
+      </section>
 
-    <div>
-      <label>Code:</label>
-      <input id="code" />
-    </div>
+      <section id="phonePanel" hidden>
+        <form id="phoneForm">
+          <label for="phone">Phone Number</label>
+          <input id="phone" autocomplete="tel" placeholder="+886..." />
+          <button type="submit">Submit Phone</button>
+        </form>
+        <button type="button" data-back-login>Use Another Account</button>
+      </section>
 
-    <div>
-      <label>Password:</label>
-      <input id="password" type="password" />
-    </div>
+      <section id="codePanel" hidden>
+        <form id="codeForm">
+          <label for="code">Telegram Code</label>
+          <input id="code" inputmode="numeric" autocomplete="one-time-code" />
+          <button type="submit">Submit Code</button>
+        </form>
+        <button type="button" data-back-login>Use Another Account</button>
+      </section>
 
-    <button onclick="start()">Start</button>
-    <button onclick="sendPhone()">Send Phone</button>
-    <button onclick="sendCode()">Send Code</button>
-    <button onclick="sendPassword()">Send Password</button>
-
-    <pre id="log"></pre>
+      <section id="passwordPanel" hidden>
+        <form id="passwordForm">
+          <label for="password">Two-Step Password</label>
+          <input id="password" type="password" autocomplete="current-password" />
+          <button type="submit">Submit Password</button>
+        </form>
+        <button type="button" data-back-login>Use Another Account</button>
+      </section>
+    </main>
 
     <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
+    <script src="js/api.js?v=20260624-login-key"></script>
+    <script src="js/auth.js?v=20260624-login-key"></script>
   </body>
 </html>

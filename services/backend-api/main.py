@@ -8,6 +8,7 @@ from database import Base, SessionLocal, engine
 from schemas import (
     Member,
     MemberCreate,
+    MemberLoginKeyUpdate,
     Group,
     GroupCreate,
     TagCreate,
@@ -115,6 +116,14 @@ def get_members(db: Session = Depends(get_db)):
     return crud.list_members(db)
 
 
+
+@app.get("/members/login-key/{login_key}", response_model=Member)
+def get_member_by_login_key(login_key: str, db: Session = Depends(get_db)):
+    member = crud.get_member_by_login_key(db, login_key)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return member
+
 @app.get("/members/{member_id}", response_model=Member)
 def get_member(member_id: int, db: Session = Depends(get_db)):
     member = crud.get_member_by_id(db, member_id)
@@ -123,9 +132,29 @@ def get_member(member_id: int, db: Session = Depends(get_db)):
     return member
 
 
+
+@app.put("/members/{member_id}/login-key", response_model=Member)
+def update_member_login_key(
+    member_id: int,
+    payload: MemberLoginKeyUpdate,
+    db: Session = Depends(get_db),
+):
+    try:
+        member = crud.update_member_login_key(db, member_id, payload.login_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    return member
+
 @app.post("/members", response_model=Member)
 def create_member(payload: MemberCreate, db: Session = Depends(get_db)):
-    return crud.create_member(db, name=payload.name, username=payload.username)
+    try:
+        return crud.create_member(db, name=payload.name, username=payload.username)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @app.get("/groups", response_model=list[Group])

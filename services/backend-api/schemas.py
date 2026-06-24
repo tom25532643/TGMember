@@ -17,6 +17,10 @@ class MemberCreate(BaseModel):
     username: str
 
 
+class MemberLoginKeyUpdate(BaseModel):
+    login_key: str
+
+
 class Group(BaseModel):
     id: int
     name: str

@@ -16,6 +16,44 @@ export async function getMember(userId: string) {
   return res.json();
 }
 
+export async function getMemberByLoginKey(loginKey: string) {
+  const key = loginKey.trim();
+
+  if (!key) {
+    return null;
+  }
+
+  const res = await fetch(`${CRM_BASE}/members/login-key/${encodeURIComponent(key)}`);
+
+  if (res.status === 404 || res.status === 422) {
+    return null;
+  }
+
+  if (!res.ok) {
+    throw new Error("CRM member check failed");
+  }
+
+  return res.json();
+}
+
+export async function updateMemberLoginKey(userId: string, loginKey: string) {
+  const res = await fetch(`${CRM_BASE}/members/${encodeURIComponent(userId)}/login-key`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ login_key: loginKey.trim() }),
+  });
+
+  if (!res.ok) {
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {}
+    throw new Error(data?.detail || data?.message || "Login Key update failed");
+  }
+
+  return res.json();
+}
+
 export async function lookupMember(loginKey: string) {
   const key = loginKey.trim();
 
@@ -23,31 +61,7 @@ export async function lookupMember(loginKey: string) {
     return null;
   }
 
-  const directRes = await fetch(`${CRM_BASE}${API_CONFIG.crmUserPath(key)}`);
-
-  if (directRes.ok) {
-    return directRes.json();
-  }
-
-  if (directRes.status !== 404 && directRes.status !== 422) {
-    throw new Error("CRM member check failed");
-  }
-
-  const listRes = await fetch(`${CRM_BASE}/members`);
-
-  if (!listRes.ok) {
-    throw new Error("CRM member list failed");
-  }
-
-  const members = await listRes.json();
-  const normalizedKey = key.toLowerCase();
-
-  return (
-    members.find(
-      (member: any) =>
-        String(member.username || "").toLowerCase() === normalizedKey,
-    ) || null
-  );
+  return getMemberByLoginKey(key);
 }
 export type TelegramMemberExpirationSyncItem = {
   telegram_user_id: number;

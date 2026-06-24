@@ -1,4 +1,5 @@
-const API_BASE = 'http://127.0.0.1:8000';
+const CONFIG = window.TGMEMBER_CONFIG || {};
+const API_BASE = CONFIG.TDLIB_BASE || 'http://127.0.0.1:8000';
 console.log("groups.js loaded");
 const state = {
   sources: [],
@@ -6,7 +7,7 @@ const state = {
   memberPreview: null,
 };
 
-const WS_BASE = 'ws://127.0.0.1:8000';
+const WS_BASE = CONFIG.TDLIB_WS_BASE || 'ws://127.0.0.1:8000';
 
 const sendProgressBoxEl = document.getElementById('sendProgressBox');
 const sendStatusTextEl = document.getElementById('sendStatusText');

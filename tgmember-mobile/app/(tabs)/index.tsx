@@ -26,6 +26,7 @@ import { storage, STORAGE_KEYS } from "../../api/storage";
 import {
   syncTelegramMemberExpirations,
   updateTelegramMemberExpiration,
+  updateMemberLoginKey,
 } from "../../api/crm";
 
 const FOREVER_DATE = "2099-12-31";
@@ -37,6 +38,7 @@ export default function IndexScreen() {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
+  const [newLoginKey, setNewLoginKey] = useState("");
 
   const [groups, setGroups] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
@@ -226,6 +228,7 @@ export default function IndexScreen() {
     const result = await resolveScreen(key);
 
     setUserId(result.userId);
+    setNewLoginKey(result.member?.username || key);
     setScreen(result.screen);
 
     await storage.setItem(STORAGE_KEYS.USER_ID, result.userId);
@@ -299,6 +302,25 @@ export default function IndexScreen() {
     });
   }
 
+
+  async function handleUpdateLoginKey() {
+    const nextLoginKey = newLoginKey.trim();
+
+    if (!nextLoginKey) {
+      Alert.alert("Error", "Enter a Login Key.");
+      return;
+    }
+
+    await run(async () => {
+      const member: any = await updateMemberLoginKey(userId, nextLoginKey);
+      const updatedLoginKey = member.username || nextLoginKey;
+
+      setLoginKey(updatedLoginKey);
+      setNewLoginKey(updatedLoginKey);
+      await storage.setItem(STORAGE_KEYS.LOGIN_KEY, updatedLoginKey);
+      Alert.alert("Saved", "Login Key updated.");
+    }, "settings");
+  }
   async function handleLoadManagedGroups() {
     await run(async () => {
       const data: any = await loadAdminSupergroups(userId);
@@ -663,10 +685,36 @@ export default function IndexScreen() {
           actionText="Open Member Management"
           onPress={() => setScreen("memberManagement")}
         />
+
+        <HomeCard
+          title="Login Key Settings"
+          description="Change the Login Key you use to sign in to TGMember."
+          actionText="Open Settings"
+          onPress={() => setScreen("settings")}
+        />
       </Page>
     );
   }
 
+
+  if (screen === "settings") {
+    return (
+      <Page title="Login Key Settings">
+        <Btn title="Back" onPress={() => setScreen("home")} />
+        <Text style={styles.info}>Current User ID: {userId}</Text>
+        <Label>Login Key</Label>
+        <TextInput
+          style={styles.input}
+          value={newLoginKey}
+          onChangeText={setNewLoginKey}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="New Login Key"
+        />
+        <Btn title="Save Login Key" onPress={handleUpdateLoginKey} />
+      </Page>
+    );
+  }
   if (screen === "folder") {
     return (
       <Page title="Folder Send">

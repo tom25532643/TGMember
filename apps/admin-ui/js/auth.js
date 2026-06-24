@@ -1,91 +1,233 @@
-const BASE = window.TGMEMBER_CONFIG.TDLIB_BASE;
+let currentUserId = "";
+let isBusy = false;
 
-function log(msg) {
-  document.getElementById("log").textContent = JSON.stringify(msg, null, 2);
+const screens = ["login", "phone", "code", "password"];
+
+function qs(id) {
+  return document.getElementById(id);
 }
 
-function getUserId() {
-  return document.getElementById("userId").value;
+function setText(id, text) {
+  qs(id).textContent = text;
 }
 
-async function start() {
-  const res = await fetch(`${BASE}/auth/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: getUserId(),
-    }),
+function getLoginKey() {
+  return qs("loginKey").value.trim();
+}
+
+function mapAuthState(payload) {
+  const state = payload?.auth_state || payload?.auth_state_raw?.["@type"];
+
+  if (payload?.is_ready || payload?.is_authorized || state === "authorizationStateReady") {
+    return "home";
+  }
+
+  if (state === "authorizationStateWaitPhoneNumber") return "phone";
+  if (state === "authorizationStateWaitCode") return "code";
+  if (state === "authorizationStateWaitPassword") return "password";
+
+  return "phone";
+}
+
+function setScreen(screen) {
+  screens.forEach((name) => {
+    qs(`${name}Panel`).hidden = name !== screen;
   });
+}
 
-  const data = await res.json();
-  log(data);
+function setBusy(nextBusy) {
+  isBusy = nextBusy;
+  document.querySelectorAll("button").forEach((button) => {
+    button.disabled = nextBusy;
+  });
+  setText("status", nextBusy ? "Checking..." : "");
+}
 
-  if (
-    data.ok &&
-    data.data &&
-    data.data.auth_state === "authorizationStateReady"
-  ) {
-    localStorage.setItem("user_id", getUserId());
-    alert("Login success!");
-    window.location.href = "index.html";
+function showError(message) {
+  setText("error", message || "Something went wrong.");
+}
+
+function clearError() {
+  setText("error", "");
+}
+
+function showMember(member) {
+  if (!member) {
+    setText("memberSummary", "");
+    return;
+  }
+
+  const username = member.username ? `@${member.username}` : "no username";
+  setText("memberSummary", `${member.name || "Member"} (${username}) - user_id ${member.id}`);
+}
+
+function goHome(userId) {
+  localStorage.setItem("user_id", userId);
+  window.location.href = "index.html";
+}
+
+async function lookupMember(loginKey) {
+  if (typeof backendApi.lookupMemberByLoginKey === "function") {
+    try {
+      return await backendApi.lookupMemberByLoginKey(loginKey);
+    } catch (err) {
+      if (err.status !== 404 && err.status !== 422) {
+        throw err;
+      }
+    }
+  }
+
+  if (typeof backendApi.getMember === "function") {
+    try {
+      return await backendApi.getMember(loginKey);
+    } catch (err) {
+      if (err.status !== 404 && err.status !== 422) {
+        throw err;
+      }
+    }
+  }
+
+  const members = await backendApi.getMembers();
+  const normalizedKey = loginKey.toLowerCase();
+
+  return (
+    members.find((member) => String(member.username || "").toLowerCase() === normalizedKey) ||
+    null
+  );
+}
+
+async function applyAuthState(userId) {
+  const auth = await tdlibApi.getAuthState(userId);
+  const payload = auth.data || auth;
+  const screen = mapAuthState(payload);
+
+  if (screen === "home") {
+    goHome(userId);
+    return;
+  }
+
+  setScreen(screen);
+}
+
+async function resolveLogin() {
+  if (isBusy) return;
+
+  const loginKey = getLoginKey();
+
+  if (!loginKey) {
+    showError("Enter a login key.");
+    return;
+  }
+
+  setBusy(true);
+  clearError();
+
+  try {
+    const member = await lookupMember(loginKey);
+
+    if (!member) {
+      currentUserId = "";
+      showMember(null);
+      showError("No such account. Please contact the developer.");
+      setScreen("login");
+      return;
+    }
+
+    currentUserId = String(member.id);
+    showMember(member);
+
+    try {
+      await applyAuthState(currentUserId);
+    } catch (err) {
+      if (err.status !== 404) throw err;
+
+      await tdlibApi.startAuth(currentUserId);
+      await applyAuthState(currentUserId);
+    }
+  } catch (err) {
+    showError(err.message || "Login failed.");
+  } finally {
+    setBusy(false);
   }
 }
 
-async function sendPhone() {
-  const res = await fetch(`${BASE}/auth/phone`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: getUserId(),
-      phone_number: document.getElementById("phone").value,
-    }),
-  });
+async function submitPhone() {
+  if (isBusy || !currentUserId) return;
 
-  const data = await res.json();
-  log(data);
-}
+  setBusy(true);
+  clearError();
 
-async function sendCode() {
-  const res = await fetch(`${BASE}/auth/code`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: getUserId(),
-      code: document.getElementById("code").value,
-    }),
-  });
-
-  const data = await res.json();
-  log(data);
-
-  checkReady();
-}
-
-async function sendPassword() {
-  const res = await fetch(`${BASE}/auth/password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: getUserId(),
-      password: document.getElementById("password").value,
-    }),
-  });
-
-  const data = await res.json();
-  log(data);
-
-  checkReady();
-}
-
-async function checkReady() {
-  const res = await fetch(`${BASE}/auth/state/${getUserId()}`);
-  const data = await res.json();
-
-  log(data);
-
-  if (data.data.auth_state === "authorizationStateReady") {
-    localStorage.setItem("user_id", getUserId());
-    alert("Login success!");
-    window.location.href = "index.html";
+  try {
+    await tdlibApi.submitPhone(currentUserId, qs("phone").value.trim());
+    await applyAuthState(currentUserId);
+  } catch (err) {
+    showError(err.message || "Phone submit failed.");
+    setScreen("phone");
+  } finally {
+    setBusy(false);
   }
 }
+
+async function submitCode() {
+  if (isBusy || !currentUserId) return;
+
+  setBusy(true);
+  clearError();
+
+  try {
+    await tdlibApi.submitCode(currentUserId, qs("code").value.trim());
+    await applyAuthState(currentUserId);
+  } catch (err) {
+    showError(err.message || "Code submit failed.");
+    setScreen("code");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function submitPassword() {
+  if (isBusy || !currentUserId) return;
+
+  setBusy(true);
+  clearError();
+
+  try {
+    await tdlibApi.submitPassword(currentUserId, qs("password").value);
+    await applyAuthState(currentUserId);
+  } catch (err) {
+    showError(err.message || "Password submit failed.");
+    setScreen("password");
+  } finally {
+    setBusy(false);
+  }
+}
+
+function backToLogin() {
+  setScreen("login");
+}
+
+qs("loginForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  resolveLogin();
+});
+
+qs("phoneForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitPhone();
+});
+
+qs("codeForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitCode();
+});
+
+qs("passwordForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitPassword();
+});
+
+document.querySelectorAll("[data-back-login]").forEach((button) => {
+  button.addEventListener("click", backToLogin);
+});
+
+setScreen("login");

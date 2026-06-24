@@ -25,17 +25,13 @@
       margin-top: 12px;
     }
 
-    input, button, select {
+    input, button {
       padding: 8px 10px;
       font-size: 14px;
     }
 
     button {
       cursor: pointer;
-    }
-
-    ul {
-      padding-left: 20px;
     }
 
     .error {
@@ -48,17 +44,18 @@
       margin-top: 10px;
     }
 
-    a {
-      text-decoration: none;
-    }
-
     .muted {
       color: #666;
     }
+
+    a {
+      text-decoration: none;
+    }
   </style>
+  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-1" />
 </head>
 <body>
-  <p><a href="./members.html">← Back to Members</a></p>
+  <p><a href="./members.html">Back to Members</a></p>
 
   <div class="card">
     <h1>Member Detail</h1>
@@ -67,53 +64,18 @@
   </div>
 
   <div class="card">
-    <h2>Tags</h2>
-    <ul id="tags-list"></ul>
-    <form id="tag-form">
-      <input id="tag-input" type="text" placeholder="New tag" required />
-      <button type="submit">Add Tag</button>
+    <h2>Login Key</h2>
+    <p class="muted">Give this key to the user. They can also change it from PWA settings after login.</p>
+    <form id="login-key-form">
+      <input id="login-key-input" type="text" placeholder="Login Key" required />
+      <button id="generate-login-key" type="button">Generate</button>
+      <button type="submit">Update Login Key</button>
     </form>
-    <div id="tag-message"></div>
+    <div id="login-key-message"></div>
   </div>
 
-  <div class="card">
-    <h2>Notes</h2>
-    <ul id="notes-list"></ul>
-    <form id="note-form">
-      <input id="note-input" type="text" placeholder="New note" required />
-      <button type="submit">Add Note</button>
-    </form>
-    <div id="note-message"></div>
-  </div>
-
-  <div class="card">
-  <h2>Send Message</h2>
-  <form id="send-message-form">
-    <input id="send-message-input" type="text" placeholder="Message content" required />
-    <button type="submit">Send</button>
-  </form>
-  <div id="send-message-result"></div>
-</div>
-
-  <div class="card">
-    <h2>Message Logs</h2>
-    <ul id="logs-list"></ul>
-    <form id="log-form">
-      <select id="log-direction" required>
-        <option value="outbound">outbound</option>
-        <option value="inbound">inbound</option>
-      </select>
-      <input id="log-content" type="text" placeholder="Message content" required />
-      <select id="log-status" required>
-        <option value="sent">sent</option>
-        <option value="received">received</option>
-        <option value="failed">failed</option>
-      </select>
-      <button type="submit">Add Log</button>
-    </form>
-    <div id="log-message"></div>
-  </div>
-
-  <script type="module" src="./js/member-detail.js"></script>
+  <script src="js/config.js?v=20260624-login-key-4"></script>
+  <script src="js/api.js?v=20260624-login-key-4"></script>
+  <script src="./js/member-detail.js?v=20260624-login-key-4"></script>
 </body>
 </html>

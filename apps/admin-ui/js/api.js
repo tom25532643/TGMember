@@ -7,9 +7,19 @@ async function httpJson(url, options = {}) {
     ...options,
   });
 
-  const data = await res.json();
+  let data = null;
+
+  try {
+    data = await res.json();
+  } catch (err) {}
+
   if (!res.ok) {
-    throw new Error(JSON.stringify(data));
+    const error = new Error(
+      data?.detail?.message || data?.detail || data?.message || `HTTP ${res.status}`,
+    );
+    error.status = res.status;
+    error.data = data;
+    throw error;
   }
   return data;
 }
@@ -71,8 +81,30 @@ window.tdlibApi = {
 };
 
 window.backendApi = {
+  getMember(memberId) {
+    return httpJson(`${BACKEND_BASE}/members/${encodeURIComponent(memberId)}`);
+  },
+
+  lookupMemberByLoginKey(loginKey) {
+    return httpJson(`${BACKEND_BASE}/members/login-key/${encodeURIComponent(loginKey)}`);
+  },
+
   getMembers() {
     return httpJson(`${BACKEND_BASE}/members`);
+  },
+
+  createMember(payload) {
+    return httpJson(`${BACKEND_BASE}/members`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateMemberLoginKey(memberId, loginKey) {
+    return httpJson(`${BACKEND_BASE}/members/${encodeURIComponent(memberId)}/login-key`, {
+      method: "PUT",
+      body: JSON.stringify({ login_key: loginKey }),
+    });
   },
 
   getGroups() {
