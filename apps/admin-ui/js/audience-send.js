@@ -22,6 +22,7 @@ const sendMaxCountInput = document.getElementById('sendMaxCount');
 let ws = null;
 let currentTaskId = null;
 let sendState = { current: 0, total: 0, success: 0, failed: 0 };
+let receivedSendComplete = false;
 
 const userIdInput = document.getElementById('userId');
 const chatIdInput = document.getElementById('chatId');
@@ -170,8 +171,11 @@ async function sendToMembers() {
     if (!res.ok || data.ok === false) {
       throw new Error(data.detail || '發送失敗');
     }
-
-    showMessage('發送完成');
+    const result = data.data || {};
+    if (!receivedSendComplete) {
+      applySendResult(result);
+    }
+    showMessage(`Send request finished. Success ${sendState.success}, failed ${sendState.failed}.`);
   } catch (e) {
     document.getElementById('sendMembersBtn').disabled = false;
     sendStatusTextEl.textContent = '發送失敗';
@@ -184,14 +188,14 @@ function resetSendProgress() {
   currentTaskId = null;
   sendState = { current: 0, total: 0, success: 0, failed: 0 };
 
-  sendProgressBoxEl.style.display = 'block';
+  sendProgressBoxEl.hidden = false;
   sendStatusTextEl.textContent = '準備發送...';
   sendProgressFillEl.style.width = '0%';
   sendCurrentEl.textContent = '0';
   sendTotalEl.textContent = '0';
   sendSuccessEl.textContent = '0';
   sendFailedEl.textContent = '0';
-  sendLogEl.innerHTML = '<div class="placeholder">等待發送事件...</div>';
+  sendLogEl.innerHTML = '<div class="placeholder">Waiting for send results...</div>';
 }
 
 function updateSendStats() {
@@ -215,6 +219,26 @@ function appendSendLog(text) {
   div.style.borderBottom = '1px solid #eee';
   div.textContent = text;
   sendLogEl.prepend(div);
+}
+
+function applySendResult(result) {
+  sendState.total = result.targeted ?? result.total ?? sendState.total;
+  sendState.current = result.targeted ?? result.total ?? sendState.current;
+  sendState.success = result.success ?? sendState.success;
+  sendState.failed = result.failed ?? sendState.failed;
+  sendStatusTextEl.textContent = `Send complete: success ${sendState.success}, failed ${sendState.failed}`;
+  appendSendLog(`Summary: success ${sendState.success}, failed ${sendState.failed}`);
+
+  const rows = result.results || [];
+  for (const row of rows) {
+    if (row.ok) {
+      appendSendLog(`Success: user ${row.user_id}${row.private_chat_id ? `, private chat ${row.private_chat_id}` : ''}`);
+    } else {
+      appendSendLog(`Failed: user ${row.user_id || '-'} - ${row.error || 'unknown error'}`);
+    }
+  }
+
+  updateSendStats();
 }
 
 function handleSendEvent(msg) {
@@ -252,6 +276,7 @@ function handleSendEvent(msg) {
   }
 
   if (msg.event === 'send_complete') {
+    receivedSendComplete = true;
     sendState.current = msg.targeted || sendState.current;
     sendState.total = msg.targeted || sendState.total;
     sendState.success = msg.success || 0;

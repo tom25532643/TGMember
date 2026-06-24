@@ -1,0 +1,5 @@
+analysis_tmp/
+pytest-cache-files-*/
+**/pytest-cache-files-*/
+.pytest_cache/
+**/.pytest_cache/

@@ -4,75 +4,34 @@
   <meta charset="UTF-8" />
   <title>TGMember - Member Detail</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 24px;
-      max-width: 960px;
-    }
-
-    .card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    form {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-
-    input, button {
-      padding: 8px 10px;
-      font-size: 14px;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    .error {
-      color: #b00020;
-      margin-top: 10px;
-    }
-
-    .success {
-      color: #0a7a2f;
-      margin-top: 10px;
-    }
-
-    .muted {
-      color: #666;
-    }
-
-    a {
-      text-decoration: none;
-    }
-  </style>
-  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-1" />
+  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
 </head>
 <body>
-  <p><a href="./members.html">Back to Members</a></p>
-
-  <div class="card">
+  <div class="topbar">
     <h1>Member Detail</h1>
-    <div id="member-basic"></div>
-    <div id="member-error" class="error"></div>
+    <div class="topbar-actions">
+      <button class="secondary" onclick="window.location.href = 'members.html'">Back to Members</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Login Key</h2>
-    <p class="muted">Give this key to the user. They can also change it from PWA settings after login.</p>
-    <form id="login-key-form">
-      <input id="login-key-input" type="text" placeholder="Login Key" required />
-      <button id="generate-login-key" type="button">Generate</button>
-      <button type="submit">Update Login Key</button>
-    </form>
-    <div id="login-key-message"></div>
-  </div>
+  <main class="container">
+    <section class="panel">
+      <h2>Profile</h2>
+      <div id="member-basic"></div>
+      <div id="member-error" class="error"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Login Key</h2>
+      <p class="muted">Give this key to the user. They can also change it from PWA settings after login.</p>
+      <form id="login-key-form">
+        <input id="login-key-input" type="text" placeholder="Login Key" required />
+        <button id="generate-login-key" type="button">Generate</button>
+        <button class="primary" type="submit">Update Login Key</button>
+      </form>
+      <div id="login-key-message"></div>
+    </section>
+  </main>
 
   <script src="js/config.js?v=20260624-login-key-4"></script>
   <script src="js/api.js?v=20260624-login-key-4"></script>

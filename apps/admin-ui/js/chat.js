@@ -534,6 +534,11 @@ async function init() {
 
   currentUserId = userId;
 
+  const userIdText = document.getElementById("userIdText");
+  if (userIdText) {
+    userIdText.textContent = userId;
+  }
+
   const backBtn = document.getElementById("backBtn");
   if (backBtn) {
     backBtn.addEventListener("click", () => {
@@ -541,23 +546,9 @@ async function init() {
     });
   }
 
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
-      try {
-        await window.tdlibApi?.closeSession?.(userId);
-      } catch (err) {
-        console.warn("closeSession failed", err);
-      }
-
-      localStorage.removeItem("user_id");
-      window.location.replace("login.html");
-    });
-  }
-
-  const loadMoreBtn = document.getElementById("loadMoreChatsBtn");
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener("click", loadMoreChats);
+  const loadMoreChatsBtn = document.getElementById("loadMoreChatsBtn");
+  if (loadMoreChatsBtn) {
+    loadMoreChatsBtn.addEventListener("click", loadMoreChats);
   }
 
   const sendBtn = document.getElementById("sendBtn");
@@ -565,11 +556,11 @@ async function init() {
     sendBtn.addEventListener("click", sendCurrentMessage);
   }
 
-  const input = document.getElementById("messageInput");
-  if (input) {
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
+  const messageInput = document.getElementById("messageInput");
+  if (messageInput) {
+    messageInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
         sendCurrentMessage();
       }
     });

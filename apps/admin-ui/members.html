@@ -4,97 +4,47 @@
   <meta charset="UTF-8" />
   <title>TGMember - Members</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 24px;
-      max-width: 960px;
-    }
-
-    h1, h2 {
-      margin-bottom: 12px;
-    }
-
-    .card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    form {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    input, button {
-      padding: 8px 10px;
-      font-size: 14px;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      border-bottom: 1px solid #ddd;
-      padding: 10px 8px;
-      text-align: left;
-    }
-
-    .error {
-      color: #b00020;
-      margin-top: 10px;
-    }
-
-    .success {
-      color: #0a7a2f;
-      margin-top: 10px;
-    }
-
-    a {
-      text-decoration: none;
-    }
-  </style>
-  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-1" />
+  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
 </head>
 <body>
-  <p><a href="./index.html">Back to Home</a></p>
-  <h1>Members / Login Keys</h1>
-
-  <div class="card">
-    <h2>Create Member</h2>
-    <form id="create-member-form">
-      <input id="member-name" type="text" placeholder="Name" required />
-      <input id="member-username" type="text" placeholder="Login Key (optional, auto-generated if blank)" />
-      <button id="generate-member-key" type="button">Generate</button>
-      <button type="submit">Create</button>
-    </form>
-    <div class="muted">Leave Login Key blank and Create will auto-generate one.</div>
-    <div id="create-member-message"></div>
+  <div class="topbar">
+    <h1>Members / Login Keys</h1>
+    <div class="topbar-actions">
+      <button class="secondary" onclick="window.location.href = 'index.html'">Back to Home</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Members</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Login Key</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="members-table-body"></tbody>
-    </table>
-    <div id="members-error" class="error"></div>
-  </div>
+  <main class="container">
+    <section class="panel">
+      <h2>Create Member</h2>
+      <form id="create-member-form">
+        <input id="member-name" type="text" placeholder="Name" required />
+        <input id="member-username" type="text" placeholder="Login Key (optional, auto-generated if blank)" />
+        <button id="generate-member-key" type="button">Generate</button>
+        <button class="primary" type="submit">Create</button>
+      </form>
+      <div class="muted">Leave Login Key blank and Create will auto-generate one.</div>
+      <div id="create-member-message"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Members</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Login Key</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="members-table-body"></tbody>
+        </table>
+      </div>
+      <div id="members-error" class="error"></div>
+    </section>
+  </main>
 
   <script src="js/config.js?v=20260624-login-key-4"></script>
   <script src="js/api.js?v=20260624-login-key-4"></script>

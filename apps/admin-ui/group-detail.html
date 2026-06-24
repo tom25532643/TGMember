@@ -4,81 +4,33 @@
   <meta charset="UTF-8" />
   <title>TGMember - Group Detail</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 24px;
-      max-width: 960px;
-    }
-
-    .card {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    form {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-
-    input, button {
-      padding: 8px 10px;
-      font-size: 14px;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    ul {
-      padding-left: 20px;
-    }
-
-    .error {
-      color: #b00020;
-      margin-top: 10px;
-    }
-
-    .success {
-      color: #0a7a2f;
-      margin-top: 10px;
-    }
-
-    .muted {
-      color: #666;
-    }
-
-    a {
-      text-decoration: none;
-    }
-  </style>
-  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-1" />
+  <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
 </head>
 <body>
-  <p>
-    <a href="./groups.html">← Back to Groups</a>
-  </p>
-
-  <div class="card">
+  <div class="topbar">
     <h1>Group Detail</h1>
-    <div id="group-basic"></div>
-    <div id="group-error" class="error"></div>
+    <div class="topbar-actions">
+      <button class="secondary" onclick="window.location.href = 'index.html'">Back to Home</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Members</h2>
-    <ul id="group-members-list"></ul>
+  <main class="container">
+    <section class="panel">
+      <h2>Profile</h2>
+      <div id="group-basic"></div>
+      <div id="group-error" class="error"></div>
+    </section>
 
-    <form id="add-member-form">
-      <input id="member-id-input" type="number" placeholder="Member ID" required />
-      <button type="submit">Add Member</button>
-    </form>
-    <div id="add-member-message"></div>
-  </div>
+    <section class="panel">
+      <h2>Members</h2>
+      <ul id="group-members-list"></ul>
+      <form id="add-member-form">
+        <input id="member-id-input" type="number" placeholder="Member ID" required />
+        <button class="primary" type="submit">Add Member</button>
+      </form>
+      <div id="add-member-message"></div>
+    </section>
+  </main>
 
   <script type="module">
     import { getGroups, getGroupMembers, addMemberToGroup } from "./js/api.js";
