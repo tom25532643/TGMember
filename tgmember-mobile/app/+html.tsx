@@ -17,7 +17,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-title" content="TGMember" />
         <meta
           name="description"
-          content="Telegram member management and broadcast tool."
+          content="Telegram 成員管理與發送工具。"
         />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />{" "}

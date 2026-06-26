@@ -102,11 +102,11 @@ export default function IndexScreen() {
 
   function statusLabel(status: string) {
     const labels: Record<string, string> = {
-      all: "All",
-      unset: "Unset",
-      active: "Active",
-      expired: "Expired",
-      forever: "Forever",
+      all: "全部",
+      unset: "未設定",
+      active: "有效",
+      expired: "已過期",
+      forever: "永久",
     };
     return labels[status] || status;
   }
@@ -152,7 +152,7 @@ export default function IndexScreen() {
     setFolderChats([]);
     setSelectedFolderChatIds({});
     setFolderLogs(
-      folder ? [`Selected folder: ${folder.title || folder.name || folder.id}`] : [],
+      folder ? [`已選擇盒子：${folder.title || folder.name || folder.id}`] : [],
     );
   }
 
@@ -219,7 +219,7 @@ export default function IndexScreen() {
       await fn();
     } catch (error: any) {
       console.error(error);
-      Alert.alert("Error", error?.message || "Something went wrong.");
+      Alert.alert("錯誤", error?.message || "發生錯誤，請稍後再試。");
       setScreen(fallbackScreen);
     }
   }
@@ -238,22 +238,19 @@ export default function IndexScreen() {
   useEffect(() => {
     async function restoreUser() {
       const savedLoginKey = await storage.getItem(STORAGE_KEYS.LOGIN_KEY);
-      const savedUserId = await storage.getItem(STORAGE_KEYS.USER_ID);
-      const saved = savedLoginKey || savedUserId;
 
-      if (!saved) {
+      if (!savedLoginKey) {
+        await storage.removeItem(STORAGE_KEYS.USER_ID);
+        setUserId("");
+        setLoginKey("");
         setScreen("login");
         return;
       }
 
-      setLoginKey(saved);
-
-      if (savedUserId) {
-        setUserId(savedUserId);
-      }
+      setLoginKey(savedLoginKey);
 
       await run(async () => {
-        await resolveAndApplyScreen(saved);
+        await resolveAndApplyScreen(savedLoginKey);
       });
     }
 
@@ -264,7 +261,7 @@ export default function IndexScreen() {
     const key = loginKey.trim();
 
     if (!key) {
-      Alert.alert("Error", "Enter a login key.");
+      Alert.alert("錯誤", "請輸入登入金鑰。");
       return;
     }
 
@@ -280,7 +277,7 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendPhone(userId, phone);
-      await resolveAndApplyScreen(loginKey || userId);
+      await resolveAndApplyScreen(loginKey);
     });
   }
 
@@ -289,7 +286,7 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendCode(userId, code);
-      await resolveAndApplyScreen(loginKey || userId);
+      await resolveAndApplyScreen(loginKey);
     });
   }
 
@@ -298,7 +295,7 @@ export default function IndexScreen() {
 
     await run(async () => {
       await sendPassword(userId, password);
-      await resolveAndApplyScreen(loginKey || userId);
+      await resolveAndApplyScreen(loginKey);
     });
   }
 
@@ -307,7 +304,7 @@ export default function IndexScreen() {
     const nextLoginKey = newLoginKey.trim();
 
     if (!nextLoginKey) {
-      Alert.alert("Error", "Enter a Login Key.");
+      Alert.alert("錯誤", "請輸入登入金鑰。");
       return;
     }
 
@@ -318,7 +315,7 @@ export default function IndexScreen() {
       setLoginKey(updatedLoginKey);
       setNewLoginKey(updatedLoginKey);
       await storage.setItem(STORAGE_KEYS.LOGIN_KEY, updatedLoginKey);
-      Alert.alert("Saved", "Login Key updated.");
+      Alert.alert("已儲存", "登入金鑰已更新。");
     }, "settings");
   }
   async function handleLoadManagedGroups() {
@@ -330,7 +327,7 @@ export default function IndexScreen() {
       setSelectedManagedGroup(null);
       setManagedMembers([]);
       setExpirationRecords({});
-      setMemberLogs([`Loaded ${list.length} managed groups.`]);
+      setMemberLogs([`已載入 ${list.length} 個可管理群組。`]);
     }, "memberManagement");
   }
 
@@ -338,7 +335,7 @@ export default function IndexScreen() {
     setSelectedManagedGroup(group);
     setManagedMembers([]);
     setExpirationRecords({});
-    setMemberLogs([`Selected group: ${group.title || group.chat_id}`]);
+    setMemberLogs([`已選擇群組：${group.title || group.chat_id}`]);
     await handleLoadManagedMembers(group);
   }
 
@@ -346,7 +343,7 @@ export default function IndexScreen() {
     const group = groupArg || selectedManagedGroup;
 
     if (!group) {
-      Alert.alert("Error", "Select a group first.");
+      Alert.alert("錯誤", "請先選擇群組。");
       return;
     }
 
@@ -374,11 +371,11 @@ export default function IndexScreen() {
           return next;
         }, {}),
       );
-      mlog(`Synced ${members.length} members.`);
+      mlog(`已同步 ${members.length} 位成員。`);
     } catch (error: any) {
       console.error(error);
-      mlog(`Sync failed: ${error?.message || "unknown error"}`);
-      Alert.alert("Error", error?.message || "Member sync failed.");
+      mlog(`同步失敗：${error?.message || "未知錯誤"}`);
+      Alert.alert("錯誤", error?.message || "成員同步失敗。");
     } finally {
       setMemberLoading(false);
     }
@@ -391,7 +388,7 @@ export default function IndexScreen() {
     const group = selectedManagedGroup;
 
     if (!group) {
-      Alert.alert("Error", "Select a group first.");
+      Alert.alert("錯誤", "請先選擇群組。");
       return;
     }
 
@@ -415,10 +412,10 @@ export default function IndexScreen() {
         ...current,
         [String(record.telegram_user_id)]: record,
       }));
-      mlog(`Updated user ${telegramUserId}.`);
+      mlog(`已更新使用者 ${telegramUserId}。`);
     } catch (error: any) {
       console.error(error);
-      Alert.alert("Error", error?.message || "Expiration update failed.");
+      Alert.alert("錯誤", error?.message || "效期更新失敗。");
     }
   }
 
@@ -429,7 +426,7 @@ export default function IndexScreen() {
 
       setGroups(list);
       setSelectedGroup(null);
-      log(`Loaded ${list.length} groups.`);
+      log(`已載入 ${list.length} 個群組。`);
     }, "audience");
   }
 
@@ -440,7 +437,7 @@ export default function IndexScreen() {
 
       setFolders(list);
       handleSelectFolder(null);
-      log(`Loaded ${list.length} folders.`);
+      log(`已載入 ${list.length} 個盒子。`);
     }, "folder");
   }
 
@@ -448,7 +445,7 @@ export default function IndexScreen() {
     const folder = selectedFolder;
 
     if (!folder) {
-      Alert.alert("Error", "Select a folder first.");
+      Alert.alert("錯誤", "請先選擇盒子。");
       return;
     }
 
@@ -457,7 +454,7 @@ export default function IndexScreen() {
 
     setFolderChats([]);
     setSelectedFolderChatIds({});
-    setFolderLogs([`Loading preview: ${folder.title || folder.name || folderId}`]);
+    setFolderLogs([`正在載入預覽：${folder.title || folder.name || folderId}`]);
 
     try {
       const res: any = await previewFolderSend(userId, folderId);
@@ -474,27 +471,27 @@ export default function IndexScreen() {
       setFolderChats(list);
       selectAllFolderChats(list);
 
-      flog(`Preview targets: ${list.length}`);
-      flog(`Total: ${preview.total ?? list.length}`);
-      flog(`Included: ${preview.included ?? list.length}`);
-      flog(`Excluded: ${preview.excluded ?? 0}`);
+      flog(`預覽對象：${list.length}`);
+      flog(`總數：${preview.total ?? list.length}`);
+      flog(`將發送：${preview.included ?? list.length}`);
+      flog(`已排除：${preview.excluded ?? 0}`);
     } catch (error: any) {
       console.error("previewFolderSend error:", error);
 
       if (!isCurrentFolderRequest(requestId, folderId)) return;
-      flog(`Preview failed: ${error?.message || "preview failed"}`);
-      Alert.alert("Error", error?.message || "Preview failed.");
+      flog(`預覽失敗：${error?.message || "預覽失敗"}`);
+      Alert.alert("錯誤", error?.message || "預覽失敗。");
     }
   }
 
   async function handleSendFolder() {
     if (!selectedFolder) {
-      Alert.alert("Error", "Select a folder first.");
+      Alert.alert("錯誤", "請先選擇盒子。");
       return;
     }
 
     if (!messageText.trim()) {
-      Alert.alert("Error", "Enter a message.");
+      Alert.alert("錯誤", "請輸入訊息內容。");
       return;
     }
 
@@ -502,16 +499,16 @@ export default function IndexScreen() {
     const selectedCount = folderChats.length - excludeChatIds.length;
 
     if (folderChats.length > 0 && selectedCount === 0) {
-      Alert.alert("Error", "Select at least one chat.");
+      Alert.alert("錯誤", "請至少選擇一個聊天室。");
       return;
     }
 
     setFolderSending(true);
     setFolderLogs([]);
 
-    flog("Starting folder send...");
-    flog(`Selected chats: ${folderChats.length > 0 ? selectedCount : "all"}`);
-    flog(`Skipped chats: ${excludeChatIds.length}`);
+    flog("開始盒子發送...");
+    flog(`選取聊天室：${folderChats.length > 0 ? selectedCount : "全部"}`);
+    flog(`略過聊天室：${excludeChatIds.length}`);
 
     try {
       const res: any = await sendFolder(
@@ -523,22 +520,22 @@ export default function IndexScreen() {
       const result = res.data || res;
       const results = result.results || [];
 
-      flog(`Total: ${result.total ?? 0}`);
-      flog(`Success: ${result.success ?? 0}`);
-      flog(`Failed: ${result.failed ?? 0}`);
+      flog(`總數：${result.total ?? 0}`);
+      flog(`成功：${result.success ?? 0}`);
+      flog(`失敗：${result.failed ?? 0}`);
 
       results.forEach((item: any) => {
         const title = item.title || item.chat_id;
-        flog(item.ok ? `OK ${title}` : `Failed ${title} ${item.error || ""}`);
+        flog(item.ok ? `成功 ${title}` : `失敗 ${title} ${item.error || ""}`);
       });
 
       Alert.alert(
-        "Send complete",
-        `Success ${result.success ?? 0} / Failed ${result.failed ?? 0}`,
+        "發送完成",
+        `成功 ${result.success ?? 0} / 失敗 ${result.failed ?? 0}`,
       );
     } catch (error: any) {
-      flog(`Error: ${error?.message || "Folder send failed."}`);
-      Alert.alert("Error", error?.message || "Folder send failed.");
+      flog(`錯誤：${error?.message || "盒子發送失敗。"}`);
+      Alert.alert("錯誤", error?.message || "盒子發送失敗。");
     } finally {
       setFolderSending(false);
     }
@@ -546,12 +543,12 @@ export default function IndexScreen() {
 
   async function handleSendAudience() {
     if (!selectedGroup) {
-      Alert.alert("Error", "Select a group first.");
+      Alert.alert("錯誤", "請先選擇群組。");
       return;
     }
 
     if (!messageText.trim()) {
-      Alert.alert("Error", "Enter a message.");
+      Alert.alert("錯誤", "請輸入訊息內容。");
       return;
     }
 
@@ -560,7 +557,7 @@ export default function IndexScreen() {
     const limit = Number.isFinite(requestedMax) && requestedMax > 0 ? requestedMax : 1;
 
     setSending(true);
-    log(`Starting audience send. Max count: ${limit}.`);
+    log(`開始名單發送，最多 ${limit} 人。`);
 
     try {
       const response: any = await sendToSupergroupMembers(
@@ -574,87 +571,87 @@ export default function IndexScreen() {
       const success = result?.success ?? 0;
       const failed = result?.failed ?? 0;
 
-      log(`Complete. targeted=${targeted} success=${success} failed=${failed}`);
+      log(`完成。目標=${targeted} 成功=${success} 失敗=${failed}`);
       Alert.alert(
-        "Send complete",
-        `Targeted ${targeted} / Success ${success} / Failed ${failed}`,
+        "發送完成",
+        `目標 ${targeted} / 成功 ${success} / 失敗 ${failed}`,
       );
     } catch (error: any) {
       console.error(error);
-      Alert.alert("Error", error?.message || "Audience send failed.");
+      Alert.alert("錯誤", error?.message || "名單發送失敗。");
     } finally {
       setSending(false);
     }
   }
 
   if (screen === "checking") {
-    return <Center text="Checking..." />;
+    return <Center text="檢查中..." />;
   }
 
   if (screen === "login") {
     return (
-      <Page title="Login">
-        <Label>Login Key</Label>
+      <Page title="登入">
+        <Label>登入金鑰</Label>
         <TextInput
           style={styles.input}
           value={loginKey}
           onChangeText={setLoginKey}
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="Example: tom123"
+          placeholder="例如：tom123"
         />
-        <Btn title="Login" onPress={login} />
+        <Btn title="登入" onPress={login} />
       </Page>
     );
   }
 
   if (screen === "session_missing") {
     return (
-      <Page title="TDLib Session Missing">
+      <Page title="找不到 TDLib Session">
         <Text style={styles.info}>
-          No TDLib session exists for this user. Start login again to create one.
+          這個使用者尚未建立 TDLib session，請重新開始登入流程。
         </Text>
-        <Btn title="Back" onPress={() => setScreen("login")} />
+        <Btn title="返回" onPress={() => setScreen("login")} />
       </Page>
     );
   }
 
   if (screen === "phone") {
     return (
-      <Page title="Phone">
-        <Label>Phone Number</Label>
+      <Page title="手機號碼">
+        <Label>手機號碼</Label>
         <TextInput
           style={styles.input}
           value={phone}
           onChangeText={setPhone}
           placeholder="+886..."
         />
-        <Btn title="Submit Phone" onPress={submitPhone} />
+        <Btn title="送出手機號碼" onPress={submitPhone} />
       </Page>
     );
   }
 
   if (screen === "code") {
     return (
-      <Page title="Code">
-        <Label>Code</Label>
+      <Page title="驗證碼">
+        <Label>驗證碼</Label>
         <TextInput style={styles.input} value={code} onChangeText={setCode} />
-        <Btn title="Submit Code" onPress={submitCode} />
+        <Btn title="送出驗證碼" onPress={submitCode} />
       </Page>
     );
   }
 
   if (screen === "password") {
     return (
-      <Page title="Password">
-        <Label>Password</Label>
+      <Page title="密碼">
+        <Label>密碼</Label>
         <TextInput
           style={styles.input}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
-        <Btn title="Submit Password" onPress={submitPassword} />
+        <Btn title="送出密碼" onPress={submitPassword} />
       </Page>
     );
   }
@@ -662,34 +659,34 @@ export default function IndexScreen() {
   if (screen === "home") {
     return (
       <Page title="TGMember">
-        <Text style={styles.subtitle}>Telegram workflow tools</Text>
-        <Text style={styles.info}>User ID: {userId}</Text>
+        <Text style={styles.subtitle}>Telegram 工作流程工具</Text>
+        <Text style={styles.info}>使用者 ID：{userId}</Text>
 
         <HomeCard
-          title="Folder Send"
-          description="Select a Telegram folder, preview target chats, and send a message."
-          actionText="Open Folder Send"
+          title="盒子發送"
+          description="選擇 Telegram 盒子、預覽目標聊天室並發送訊息。"
+          actionText="開啟盒子發送"
           onPress={() => setScreen("folder")}
         />
 
         <HomeCard
-          title="Audience Send"
-          description="Select a Telegram group and send messages to a limited member audience."
-          actionText="Open Audience Send"
+          title="名單發送"
+          description="選擇 Telegram 群組，並限制人數發送訊息。"
+          actionText="開啟名單發送"
           onPress={() => setScreen("audience")}
         />
 
         <HomeCard
-          title="Private Group Members"
-          description="Manage expiration dates for members in Telegram groups where you are an admin."
-          actionText="Open Member Management"
+          title="私密群組成員"
+          description="管理你擔任管理員的 Telegram 群組成員效期。"
+          actionText="開啟成員管理"
           onPress={() => setScreen("memberManagement")}
         />
 
         <HomeCard
-          title="Login Key Settings"
-          description="Change the Login Key you use to sign in to TGMember."
-          actionText="Open Settings"
+          title="登入金鑰設定"
+          description="修改你用來登入 TGMember 的登入金鑰。"
+          actionText="開啟設定"
           onPress={() => setScreen("settings")}
         />
       </Page>
@@ -699,27 +696,27 @@ export default function IndexScreen() {
 
   if (screen === "settings") {
     return (
-      <Page title="Login Key Settings">
-        <Btn title="Back" onPress={() => setScreen("home")} />
-        <Text style={styles.info}>Current User ID: {userId}</Text>
-        <Label>Login Key</Label>
+      <Page title="登入金鑰設定">
+        <Btn title="返回" onPress={() => setScreen("home")} />
+        <Text style={styles.info}>Current 使用者 ID：{userId}</Text>
+        <Label>登入金鑰</Label>
         <TextInput
           style={styles.input}
           value={newLoginKey}
           onChangeText={setNewLoginKey}
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="New Login Key"
+          placeholder="新的登入金鑰"
         />
-        <Btn title="Save Login Key" onPress={handleUpdateLoginKey} />
+        <Btn title="儲存登入金鑰" onPress={handleUpdateLoginKey} />
       </Page>
     );
   }
   if (screen === "folder") {
     return (
-      <Page title="Folder Send">
-        <Btn title="Back" onPress={() => setScreen("home")} />
-        <Btn title="Load Folders" onPress={handleLoadFolders} />
+      <Page title="盒子發送">
+        <Btn title="返回" onPress={() => setScreen("home")} />
+        <Btn title="載入盒子" onPress={handleLoadFolders} />
 
         {folders.map((folder) => {
           const selected = selectedFolder && selectedFolder.id === folder.id;
@@ -736,12 +733,12 @@ export default function IndexScreen() {
           );
         })}
 
-        <Btn title="Preview Targets" onPress={handlePreviewFolderSend} />
+        <Btn title="預覽對象" onPress={handlePreviewFolderSend} />
 
         {folderChats.length > 0 && (
           <View style={styles.chatSelectionHeader}>
             <Text style={styles.itemSub}>
-              Selected {folderChats.length - getExcludedFolderChatIds().length} /{" "}
+              已選 {folderChats.length - getExcludedFolderChatIds().length} /{" "}
               {folderChats.length}
             </Text>
             <View style={styles.chatSelectionActions}>
@@ -749,13 +746,13 @@ export default function IndexScreen() {
                 style={styles.smallButton}
                 onPress={() => setAllFolderChatsSelected(true)}
               >
-                <Text style={styles.smallButtonText}>Select All</Text>
+                <Text style={styles.smallButtonText}>全選</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.smallButton}
                 onPress={() => setAllFolderChatsSelected(false)}
               >
-                <Text style={styles.smallButtonText}>Select None</Text>
+                <Text style={styles.smallButtonText}>全不選</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -781,27 +778,27 @@ export default function IndexScreen() {
           );
         })}
 
-        <Label>Message</Label>
+        <Label>訊息內容</Label>
         <TextInput
           style={[styles.input, styles.textarea]}
           multiline
           value={messageText}
           onChangeText={setMessageText}
-          placeholder="Message"
+          placeholder="請輸入訊息"
         />
 
         {folderSending ? (
           <View style={styles.progressBox}>
-            <Text style={styles.progressTitle}>Folder sending...</Text>
+            <Text style={styles.progressTitle}>盒子發送中...</Text>
             <Text style={styles.progressText}>
-              Please do not close this screen.
+              請不要關閉此畫面。
             </Text>
           </View>
         ) : (
-          <Btn title="Send Folder" onPress={handleSendFolder} />
+          <Btn title="發送盒子" onPress={handleSendFolder} />
         )}
 
-        <Text style={styles.section}>Folder Logs</Text>
+        <Text style={styles.section}>盒子發送紀錄</Text>
         {folderLogs.map((entry, index) => (
           <Text key={index} style={styles.log}>
             {entry}
@@ -815,9 +812,9 @@ export default function IndexScreen() {
     const visibleMembers = filteredManagedMembers();
 
     return (
-      <Page title="Private Group Members">
-        <Btn title="Back" onPress={() => setScreen("home")} />
-        <Btn title="Load Managed Groups" onPress={handleLoadManagedGroups} />
+      <Page title="私密群組成員">
+        <Btn title="返回" onPress={() => setScreen("home")} />
+        <Btn title="載入可管理群組" onPress={handleLoadManagedGroups} />
 
         {managedGroups.map((group) => {
           const id = group.chat_id || group.id;
@@ -832,11 +829,11 @@ export default function IndexScreen() {
               onPress={() => handleSelectManagedGroup(group)}
             >
               <Text style={styles.itemTitle}>
-                {group.title || group.name || `Group ${id}`}
+                {group.title || group.name || `群組 ${id}`}
               </Text>
               <Text style={styles.itemSub}>chat_id: {String(id)}</Text>
               <Text style={styles.itemSub}>
-                {group.is_channel ? "Channel" : "Group"} ? {group.my_status || "admin"}
+                {group.is_channel ? "頻道" : "群組"} · {group.my_status || "admin"}
               </Text>
             </TouchableOpacity>
           );
@@ -844,22 +841,22 @@ export default function IndexScreen() {
 
         {selectedManagedGroup && (
           <Btn
-            title={memberLoading ? "Syncing Members..." : "Sync Members"}
+            title={memberLoading ? "同步成員中..." : "同步成員"}
             onPress={() => handleLoadManagedMembers()}
           />
         )}
 
-        <Label>Search Members</Label>
+        <Label>搜尋成員</Label>
         <TextInput
           style={styles.input}
           value={memberSearch}
           onChangeText={setMemberSearch}
           autoCapitalize="none"
           autoCorrect={false}
-          placeholder="Name, username, or user id"
+          placeholder="名稱、username 或 user id"
         />
 
-        <Text style={styles.section}>Status Filter</Text>
+        <Text style={styles.section}>狀態篩選</Text>
         <View style={styles.filterRow}>
           {["all", "unset", "active", "expired", "forever"].map((status) => (
             <TouchableOpacity
@@ -883,13 +880,13 @@ export default function IndexScreen() {
         </View>
 
         <Text style={styles.itemSub}>
-          Members {visibleMembers.length} / {managedMembers.length}. Join time: unknown.
+          成員 {visibleMembers.length} / {managedMembers.length}。加入時間：未知。
         </Text>
 
         {visibleMembers.map((member) => {
           const record = expirationRecords[String(member.user_id)];
           const status = getExpirationStatus(record);
-          const username = member.username ? `@${member.username}` : "No username";
+          const username = member.username ? `@${member.username}` : "沒有 username";
 
           return (
             <View key={String(member.user_id)} style={styles.memberCard}>
@@ -898,9 +895,9 @@ export default function IndexScreen() {
               </Text>
               <Text style={styles.itemSub}>{username}</Text>
               <Text style={styles.itemSub}>user_id: {member.user_id}</Text>
-              <Text style={styles.itemSub}>Join time: unknown</Text>
+              <Text style={styles.itemSub}>加入時間：未知</Text>
               <Text style={styles.itemSub}>
-                Expiration: {record?.expiration_date || "Unset"}
+                到期日： {record?.expiration_date || "Unset"}
               </Text>
               <Text style={[styles.statusBadge, statusStyle(status)]}>
                 {statusLabel(status)}
@@ -923,20 +920,20 @@ export default function IndexScreen() {
                   style={styles.smallButton}
                   onPress={() => handleUpdateMemberExpiration(member.user_id, "forever")}
                 >
-                  <Text style={styles.smallButtonText}>Forever</Text>
+                  <Text style={styles.smallButtonText}>永久</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.smallButton, styles.dangerButton]}
                   onPress={() => handleUpdateMemberExpiration(member.user_id, "clear")}
                 >
-                  <Text style={[styles.smallButtonText, styles.dangerButtonText]}>Clear</Text>
+                  <Text style={[styles.smallButtonText, styles.dangerButtonText]}>清除</Text>
                 </TouchableOpacity>
               </View>
             </View>
           );
         })}
 
-        <Text style={styles.section}>Member Logs</Text>
+        <Text style={styles.section}>成員紀錄</Text>
         {memberLogs.map((entry, index) => (
           <Text key={index} style={styles.log}>
             {entry}
@@ -948,9 +945,9 @@ export default function IndexScreen() {
 
   if (screen === "audience") {
     return (
-      <Page title="Audience Send">
-        <Btn title="Back" onPress={() => setScreen("home")} />
-        <Btn title="Load Groups" onPress={handleLoadGroups} />
+      <Page title="名單發送">
+        <Btn title="返回" onPress={() => setScreen("home")} />
+        <Btn title="載入群組" onPress={handleLoadGroups} />
 
         {groups.map((group) => {
           const id = group.chat_id || group.id;
@@ -964,23 +961,23 @@ export default function IndexScreen() {
               onPress={() => setSelectedGroup(group)}
             >
               <Text style={styles.itemTitle}>
-                {group.title || group.name || `Group ${id}`}
+                {group.title || group.name || `群組 ${id}`}
               </Text>
               <Text style={styles.itemSub}>chat_id: {String(id)}</Text>
             </TouchableOpacity>
           );
         })}
 
-        <Label>Message</Label>
+        <Label>訊息內容</Label>
         <TextInput
           style={[styles.input, styles.textarea]}
           multiline
           value={messageText}
           onChangeText={setMessageText}
-          placeholder="Message"
+          placeholder="請輸入訊息"
         />
 
-        <Label>Max Count</Label>
+        <Label>最多發送人數</Label>
         <TextInput
           style={styles.input}
           value={maxCount}
@@ -990,16 +987,16 @@ export default function IndexScreen() {
 
         {sending ? (
           <View style={styles.progressBox}>
-            <Text style={styles.progressTitle}>Sending...</Text>
+            <Text style={styles.progressTitle}>發送中...</Text>
             <Text style={styles.progressText}>
-              Queue is running. Please do not close this screen.
+              佇列執行中，請不要關閉此畫面。
             </Text>
           </View>
         ) : (
-          <Btn title="Start Audience Send" onPress={handleSendAudience} />
+          <Btn title="開始名單發送" onPress={handleSendAudience} />
         )}
 
-        <Text style={styles.section}>Logs</Text>
+        <Text style={styles.section}>紀錄</Text>
         {logs.map((entry, index) => (
           <Text key={index} style={styles.log}>
             {entry}
@@ -1009,7 +1006,7 @@ export default function IndexScreen() {
     );
   }
 
-  return <Center text="Unknown screen" />;
+  return <Center text="未知畫面" />;
 }
 
 function Page({ title, children }: any) {

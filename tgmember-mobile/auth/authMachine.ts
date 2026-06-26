@@ -53,7 +53,7 @@ export async function resolveScreen(
   const member = await lookupMember(loginKey);
 
   if (!member) {
-    throw new Error("No such account. Please contact the developer.");
+    throw new Error("找不到帳號，請聯絡管理者。");
   }
 
   const tdlibUserId = String(member.id);
