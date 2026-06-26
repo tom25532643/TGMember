@@ -37,7 +37,7 @@ function updateChatCountText() {
   const text = document.getElementById("chatCountText");
   if (!text) return;
 
-  text.textContent = `Loaded ${chatsCache.length} chats / limit ${chatLimit}`;
+  text.textContent = `已載入 ${chatsCache.length} 個聊天室 / 上限 ${chatLimit}`;
 }
 
 function setLoadMoreChatsLoading(isLoading) {
@@ -46,10 +46,10 @@ function setLoadMoreChatsLoading(isLoading) {
 
   btn.disabled = isLoading || chatLimit >= CHAT_LIMIT_MAX;
   btn.textContent = isLoading
-    ? "Loading..."
+    ? "載入中..."
     : chatLimit >= CHAT_LIMIT_MAX
-      ? "Max Chats Loaded"
-      : "Load More Chats";
+      ? "已載入最大數量"
+      : "載入更多聊天室";
 }
 
 function setSendLoading(isLoading) {
@@ -58,7 +58,7 @@ function setSendLoading(isLoading) {
 
   if (btn) {
     btn.disabled = isLoading;
-    btn.textContent = isLoading ? "Sending..." : "Send";
+    btn.textContent = isLoading ? "發送中..." : "送出";
   }
 
   if (input) {
@@ -135,7 +135,7 @@ function createMessageElement(msg) {
   div.innerHTML = `
     ${contentHtml}
     <div class="meta">
-      ${isSelf ? "Me" : msg.sender_id} · ${formatTime(msg.date)}
+      ${isSelf ? "我" : msg.sender_id} 繚 ${formatTime(msg.date)}
     </div>
   `;
 
@@ -224,12 +224,12 @@ async function loadMessages(userId, chatId, chatTitle = "") {
   hasMore = true;
 
   currentChatId = chatId;
-  currentChatTitle = chatTitle || `Chat ${chatId}`;
+  currentChatTitle = chatTitle || `聊天室 ${chatId}`;
 
   document.getElementById("chatTitle").textContent = currentChatTitle;
 
   const box = document.getElementById("messageBox");
-  box.innerHTML = `<div class="empty">Loading...</div>`;
+  box.innerHTML = `<div class="empty">載入中...</div>`;
 
   renderChats(chatsCache);
 
@@ -256,7 +256,7 @@ async function loadMessages(userId, chatId, chatTitle = "") {
     connectWs(userId, chatId);
   } catch (err) {
     console.error("loadMessages error:", err);
-    box.innerHTML = `<div class="empty">Load messages failed</div>`;
+    box.innerHTML = `<div class="empty">訊息載入失敗</div>`;
   } finally {
     loadingMessages = false;
   }
@@ -367,7 +367,7 @@ async function sendCurrentMessage() {
   if (sendingMessage) return;
 
   if (!currentUserId || !currentChatId) {
-    alert("Please select a chat first.");
+    alert("請先選擇聊天室。");
     return;
   }
 
@@ -410,7 +410,7 @@ async function sendCurrentMessage() {
     appendMessage(sentMessage);
   } catch (err) {
     console.error("sendCurrentMessage error:", err);
-    alert(`Send failed: ${err.message || err}`);
+    alert(`發送失敗：${err.message || err}`);
   } finally {
     sendingMessage = false;
     setSendLoading(false);
@@ -469,10 +469,10 @@ function renderChats(chats) {
     item.style.cursor = "pointer";
 
     item.innerHTML = `
-      <div class="chat-row" title="${escapeHtml(chat.title || `Chat ${chat.id}`)}">
+      <div class="chat-row" title="${escapeHtml(chat.title || `聊天室 ${chat.id}`)}">
         <span class="unread-dot${hasUnread ? "" : " hidden"}"></span>
         <div class="chat-title-text">
-          ${escapeHtml(chat.title || `Chat ${chat.id}`)}
+          ${escapeHtml(chat.title || `聊天室 ${chat.id}`)}
         </div>
       </div>
     `;

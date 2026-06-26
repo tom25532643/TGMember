@@ -1,4 +1,4 @@
-const params = new URLSearchParams(window.location.search);
+﻿const params = new URLSearchParams(window.location.search);
 const memberId = params.get("id");
 
 const memberBasic = document.getElementById("member-basic");
@@ -49,15 +49,15 @@ function setMessage(element, message, className = "") {
 function renderMember(member) {
   memberBasic.innerHTML = `
     <p><strong>ID:</strong> ${member.id}</p>
-    <p><strong>Name:</strong> ${escapeHtml(member.name)}</p>
-    <p><strong>Login Key:</strong> ${escapeHtml(member.username)}</p>
+    <p><strong>名稱：</strong> ${escapeHtml(member.name)}</p>
+    <p><strong>登入金鑰：</strong> ${escapeHtml(member.username)}</p>
   `;
   loginKeyInput.value = member.username || "";
 }
 
 async function loadMember() {
   if (!memberId) {
-    memberError.textContent = "Missing member id.";
+    memberError.textContent = "缺少成員 ID。";
     return;
   }
 
@@ -67,7 +67,7 @@ async function loadMember() {
     currentMember = await backendApi.getMember(memberId);
     renderMember(currentMember);
   } catch (error) {
-    memberError.textContent = `Failed to load member: ${error.message}`;
+    memberError.textContent = `成員載入失敗：${error.message}`;
   }
 }
 
@@ -84,9 +84,9 @@ loginKeyForm.addEventListener("submit", async (event) => {
   try {
     currentMember = await backendApi.updateMemberLoginKey(memberId, loginKey);
     renderMember(currentMember);
-    setMessage(loginKeyMessage, "Login Key updated.", "success");
+    setMessage(loginKeyMessage, "登入金鑰已更新。", "success");
   } catch (error) {
-    setMessage(loginKeyMessage, `Failed to update Login Key: ${error.message}`, "error");
+    setMessage(loginKeyMessage, `更新登入金鑰失敗：${error.message}`, "error");
   }
 });
 

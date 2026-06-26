@@ -1,4 +1,4 @@
-function goLogin() {
+﻿function goLogin() {
   window.location.replace("login.html");
 }
 
@@ -32,14 +32,14 @@ async function init() {
     const members = await backendApi.getMembers();
     document.getElementById("membersBox").textContent = JSON.stringify(members, null, 2);
   } catch (err) {
-    document.getElementById("membersBox").textContent = `Members load failed: ${err.message}`;
+    document.getElementById("membersBox").textContent = `成員載入失敗：${err.message}`;
   }
 
   try {
     const groups = await backendApi.getGroups();
     document.getElementById("groupsBox").textContent = JSON.stringify(groups, null, 2);
   } catch (err) {
-    document.getElementById("groupsBox").textContent = `Groups load failed: ${err.message}`;
+    document.getElementById("groupsBox").textContent = `群組載入失敗：${err.message}`;
   }
 }
 

@@ -1,90 +1,90 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TGMember - &#30418;&#23376;&#30332;&#36865;</title>
+  <title>TGMember - 盒子發送</title>
   <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-7" />
 </head>
 <body>
   <div class="topbar">
-    <h1>&#30418;&#23376;&#30332;&#36865;</h1>
+    <h1>盒子發送</h1>
     <div class="topbar-actions">
-      <button class="secondary" id="backBtn">&#22238;&#39318;&#38913;</button>
+      <button class="secondary" id="backBtn">回首頁</button>
     </div>
   </div>
 
   <main class="container folder-send-page">
     <section class="panel">
-      <h2>1. &#36617;&#20837;&#30418;&#23376;</h2>
+      <h2>1. 載入盒子</h2>
       <div id="error-message"></div>
       <div id="page-message"></div>
 
       <div class="form-row">
         <div class="form-group">
-          <label for="memberId">&#25104;&#21729; ID <span class="inline-meta">&#23565;&#25033; Login &#26178;&#30340; User ID</span></label>
-          <input type="number" id="memberId" placeholder="Example: 1" />
+          <label for="memberId">成員 ID <span class="inline-meta">對應登入時的 User ID</span></label>
+          <input type="number" id="memberId" placeholder="例如：1" />
         </div>
         <div class="form-group action-field">
-          <button class="primary" id="loadFoldersBtn" type="button">&#36617;&#20837;&#30418;&#23376;</button>
+          <button class="primary" id="loadFoldersBtn" type="button">載入盒子</button>
         </div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>2. &#36984;&#25799;&#30418;&#23376;</h2>
+      <h2>2. 選擇盒子</h2>
       <div class="form-group">
-        <label for="folderId">&#30418;&#23376;</label>
+        <label for="folderId">盒子</label>
         <select id="folderId" disabled>
-          <option value="">&#35531;&#20808;&#36617;&#20837;&#30418;&#23376;</option>
+          <option value="">請先載入盒子</option>
         </select>
       </div>
-      <div class="muted">&#36984;&#25799;&#30418;&#23376;&#24460;&#65292;&#21040;&#27493;&#39519; 3 &#35373;&#23450;&#25490;&#38500;&#22411;&#24907;&#33287;&#38928;&#35261;&#21517;&#21934;&#12290;</div>
+      <div class="muted">選擇盒子後，到步驟 3 設定排除型態與預覽名單。</div>
     </section>
 
     <section class="panel" id="preview-section" hidden>
-      <h2>3. &#38928;&#35261;&#21517;&#21934;&#33287;&#25490;&#38500;&#23565;&#35937;</h2>
+      <h2>3. 預覽名單與排除對象</h2>
       <div class="form-group">
-        <label>&#25490;&#38500;&#32842;&#22825;&#23460;&#22411;&#24907;</label>
+        <label>排除聊天室型態</label>
         <div class="type-filter-group">
-          <button class="type-filter" type="button" data-type="chatTypeChannel" aria-pressed="false">&#38971;&#36947;</button>
-          <button class="type-filter" type="button" data-type="chatTypeBasicGroup" aria-pressed="false">&#19968;&#33324;&#32676;&#32068;</button>
-          <button class="type-filter" type="button" data-type="chatTypeSupergroup" aria-pressed="false">&#36229;&#32026;&#32676;&#32068;</button>
-          <button class="type-filter" type="button" data-type="chatTypePrivate" aria-pressed="false">&#31169;&#32842;</button>
+          <button class="type-filter" type="button" data-type="chatTypeChannel" aria-pressed="false">頻道</button>
+          <button class="type-filter" type="button" data-type="chatTypeBasicGroup" aria-pressed="false">一般群組</button>
+          <button class="type-filter" type="button" data-type="chatTypeSupergroup" aria-pressed="false">超級群組</button>
+          <button class="type-filter" type="button" data-type="chatTypePrivate" aria-pressed="false">私聊</button>
         </div>
-        <div class="helper-text">&#35519;&#25972;&#22411;&#24907;&#25490;&#38500;&#26371;&#33258;&#21205;&#37325;&#26032;&#38928;&#35261;&#12290;</div>
+        <div class="helper-text">調整型態排除後會自動重新預覽。</div>
       </div>
 
       <div class="stats">
-        <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">&#32317;&#25976;</div></div>
-        <div class="stat"><div class="stat-value" id="stat-included">0</div><div class="stat-label">&#23559;&#30332;&#36865;</div></div>
-        <div class="stat"><div class="stat-value" id="stat-excluded">0</div><div class="stat-label">&#24050;&#25490;&#38500;</div></div>
+        <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">總數</div></div>
+        <div class="stat"><div class="stat-value" id="stat-included">0</div><div class="stat-label">將發送</div></div>
+        <div class="stat"><div class="stat-value" id="stat-excluded">0</div><div class="stat-label">已排除</div></div>
       </div>
       <div class="btn-row spaced-top spaced-bottom">
-        <button class="secondary" id="selectAllTargetsBtn" type="button">&#20840;&#37096;&#32013;&#20837;</button>
-        <button class="secondary" id="excludeAllTargetsBtn" type="button">&#20840;&#37096;&#25490;&#38500;</button>
+        <button class="secondary" id="selectAllTargetsBtn" type="button">全部納入</button>
+        <button class="secondary" id="excludeAllTargetsBtn" type="button">全部排除</button>
       </div>
       <div class="preview-list selectable-list" id="preview-list"></div>
     </section>
 
     <section class="panel" id="composer-section" hidden>
-      <h2>4. &#30332;&#36865;&#35338;&#24687;</h2>
+      <h2>4. 發送訊息</h2>
       <div class="form-group">
-        <label for="messageText">&#30332;&#36865;&#20839;&#23481;</label>
-        <textarea id="messageText" placeholder="Type message..."></textarea>
+        <label for="messageText">發送內容</label>
+        <textarea id="messageText" placeholder="請輸入要發送的訊息"></textarea>
       </div>
       <div class="button-group">
-        <button class="primary" id="sendBtn" type="button">&#38283;&#22987;&#30332;&#36865;</button>
+        <button class="primary" id="sendBtn" type="button">開始發送</button>
       </div>
     </section>
 
     <section class="panel" id="result-section" hidden>
-      <h2>&#30332;&#36865;&#32080;&#26524;</h2>
+      <h2>發送結果</h2>
       <div id="result-message"></div>
       <div class="stats">
-        <div class="stat"><div class="stat-value" id="result-total">0</div><div class="stat-label">&#32317;&#25976;</div></div>
-        <div class="stat"><div class="stat-value" id="result-success">0</div><div class="stat-label">&#25104;&#21151;</div></div>
-        <div class="stat"><div class="stat-value" id="result-failed">0</div><div class="stat-label">&#22833;&#25943;</div></div>
+        <div class="stat"><div class="stat-value" id="result-total">0</div><div class="stat-label">總數</div></div>
+        <div class="stat"><div class="stat-value" id="result-success">0</div><div class="stat-label">成功</div></div>
+        <div class="stat"><div class="stat-value" id="result-failed">0</div><div class="stat-label">失敗</div></div>
       </div>
       <div class="table-wrap">
         <table class="results-table" id="results-table"></table>
@@ -112,10 +112,10 @@
     const pageMessage = document.getElementById('page-message');
 
     const typeLabels = {
-      chatTypeChannel: 'Channel',
-      chatTypeBasicGroup: 'Basic group',
-      chatTypeSupergroup: 'Supergroup',
-      chatTypePrivate: 'Private chat',
+      chatTypeChannel: '頻道',
+      chatTypeBasicGroup: '一般群組',
+      chatTypeSupergroup: '超級群組',
+      chatTypePrivate: '私聊',
     };
 
     function escapeHtml(text) {
@@ -148,7 +148,7 @@
     }
 
     function normalizeFolderName(folder) {
-      const defaultName = `Folder ${folder?.id ?? ''}`;
+      const defaultName = `盒子 ${folder?.id ?? ''}`;
       const rawName = folder?.name;
 
       function normalize(raw) {
@@ -220,7 +220,7 @@
 
     function renderPreviewList() {
       if (!state.targets.length) {
-        previewList.innerHTML = '<div class="empty">No target chats in this folder.</div>';
+        previewList.innerHTML = '<div class="empty">這個盒子沒有可發送的聊天室。</div>';
         updateStats();
         return;
       }
@@ -230,11 +230,11 @@
         const chatId = getChatId(chat);
         const isTypeExcluded = state.typeExcludedChatIds.has(chatId);
         const isExcluded = excluded.has(chatId);
-        const title = chat.title || `Chat ${chatId}`;
+        const title = chat.title || `聊天室 ${chatId}`;
         const type = chat.type || '-';
-        const statusText = isTypeExcluded ? 'Type excluded' : isExcluded ? 'Excluded' : 'Included';
+        const statusText = isTypeExcluded ? '依型態排除' : isExcluded ? '已排除' : '將發送';
         const statusClass = isExcluded ? 'status-excluded' : 'status-included';
-        const action = isExcluded ? 'Include' : 'Exclude';
+        const action = isExcluded ? '納入' : '排除';
         const disabled = isTypeExcluded ? 'disabled' : '';
 
         return `
@@ -256,14 +256,14 @@
       showMessage('');
       const memberId = memberIdInput.value.trim();
       if (!memberId) {
-        showError('Please enter member ID first.');
+        showError('請先輸入成員 ID。');
         memberIdInput.focus();
         return;
       }
 
-      setLoading(loadFoldersBtn, true, 'Loading...', 'Load folders');
+      setLoading(loadFoldersBtn, true, '載入中...', '載入盒子');
       folderSelect.disabled = true;
-      folderSelect.innerHTML = '<option value="">Loading...</option>';
+      folderSelect.innerHTML = '<option value="">載入中...</option>';
       previewSection.hidden = true;
       composerSection.hidden = true;
       resultSection.hidden = true;
@@ -272,10 +272,10 @@
         const resp = await fetch(`${API_BASE}/folders/${encodeURIComponent(memberId)}`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        if (!data.ok) throw new Error(data.detail || 'API error');
+        if (!data.ok) throw new Error(data.detail || 'API 錯誤');
 
         state.folders = Array.isArray(data.data) ? data.data : [];
-        folderSelect.innerHTML = '<option value="">Select folder</option>';
+        folderSelect.innerHTML = '<option value="">選擇盒子</option>';
         for (const folder of state.folders) {
           const opt = document.createElement('option');
           opt.value = String(folder.id || '');
@@ -284,12 +284,12 @@
         }
 
         folderSelect.disabled = state.folders.length === 0;
-        showMessage(state.folders.length ? `Loaded ${state.folders.length} folders.` : 'No folders found.');
+        showMessage(state.folders.length ? `已載入 ${state.folders.length} 個盒子。` : '找不到盒子。');
       } catch (err) {
-        folderSelect.innerHTML = '<option value="">Load failed</option>';
-        showError(`Load folders failed: ${err.message}`);
+        folderSelect.innerHTML = '<option value="">載入失敗</option>';
+        showError(`載入盒子失敗：${err.message}`);
       } finally {
-        setLoading(loadFoldersBtn, false, 'Loading...', 'Load folders');
+        setLoading(loadFoldersBtn, false, '載入中...', '載入盒子');
       }
     }
 
@@ -299,7 +299,7 @@
       const memberId = memberIdInput.value.trim();
       const folderId = folderSelect.value.trim();
       const excludeTypes = getExcludeTypes();
-      if (!memberId) return showError('Please enter member ID first.');
+      if (!memberId) return showError('請先輸入成員 ID。');
       if (!folderId) {
         previewSection.hidden = true;
         composerSection.hidden = true;
@@ -309,7 +309,7 @@
       previewSection.hidden = false;
       composerSection.hidden = true;
       resultSection.hidden = true;
-      previewList.innerHTML = '<div class="loading">Loading preview...</div>';
+      previewList.innerHTML = '<div class="loading">預覽載入中...</div>';
       state.targets = [];
       state.typeExcludedChatIds.clear();
       updateStats();
@@ -322,7 +322,7 @@
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        if (!data.ok) throw new Error(data.detail || 'API error');
+        if (!data.ok) throw new Error(data.detail || 'API 錯誤');
 
         const preview = data.data || {};
         const includedChats = preview.chats || [];
@@ -336,7 +336,7 @@
         composerSection.hidden = state.targets.length === 0;
       } catch (err) {
         previewList.innerHTML = '';
-        showError(`Preview failed: ${err.message}`);
+        showError(`預覽失敗：${err.message}`);
       }
     }
 
@@ -345,18 +345,17 @@
       const memberId = memberIdInput.value.trim();
       const folderId = folderSelect.value.trim();
       const text = document.getElementById('messageText').value.trim();
-      const retryFailed = true;
       const selectedTargets = getSelectedTargets();
-      if (!memberId || !folderId) return showError('Please enter member ID and select folder first.');
-      if (!selectedTargets.length) return showError('No included targets to send.');
+      if (!memberId || !folderId) return showError('請輸入成員 ID 並選擇盒子。');
+      if (!selectedTargets.length) return showError('沒有可發送的對象。');
       if (!text) {
-        showError('Please enter message content.');
+        showError('請輸入訊息內容。');
         document.getElementById('messageText').focus();
         return;
       }
 
       const sendBtn = document.getElementById('sendBtn');
-      setLoading(sendBtn, true, 'Sending...', 'Send');
+      setLoading(sendBtn, true, '發送中...', '開始發送');
       try {
         const resp = await fetch(`${API_BASE}/folders/${encodeURIComponent(memberId)}/${encodeURIComponent(folderId)}/send`, {
           method: 'POST',
@@ -365,17 +364,17 @@
             text,
             exclude_types: getExcludeTypes(),
             exclude_chat_ids: Array.from(state.manualExcludedChatIds),
-            retry_failed: retryFailed,
+            retry_failed: true,
           }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        if (!data.ok) throw new Error(data.detail || 'API error');
+        if (!data.ok) throw new Error(data.detail || 'API 錯誤');
         displayResults(data.data || {});
       } catch (err) {
-        showError(`Send failed: ${err.message}`);
+        showError(`發送失敗：${err.message}`);
       } finally {
-        setLoading(sendBtn, false, 'Sending...', 'Send');
+        setLoading(sendBtn, false, '發送中...', '開始發送');
       }
     }
 
@@ -389,19 +388,19 @@
       document.getElementById('result-failed').textContent = failed;
 
       const tableHtml = [
-        '<thead><tr><th>Target</th><th>Type</th><th>Status</th><th>Remark</th></tr></thead>',
+        '<thead><tr><th>對象</th><th>型態</th><th>狀態</th><th>備註</th></tr></thead>',
         '<tbody>',
         ...results.map((r) => {
-          const status = r.ok ? '<span class="result-ok">Success</span>' : '<span class="result-failed">Failed</span>';
-          const remark = r.error ? escapeHtml(r.error) : r.retry_ok ? 'Retry success' : '';
-          return `<tr><td>${escapeHtml(r.title || 'Chat ' + r.chat_id)}</td><td>${escapeHtml(typeLabels[r.type] || r.type || '-')}</td><td>${status}</td><td>${remark}</td></tr>`;
+          const status = r.ok ? '<span class="result-ok">成功</span>' : '<span class="result-failed">失敗</span>';
+          const remark = r.error ? escapeHtml(r.error) : r.retry_ok ? '重試成功' : '';
+          return `<tr><td>${escapeHtml(r.title || '聊天室 ' + r.chat_id)}</td><td>${escapeHtml(typeLabels[r.type] || r.type || '-')}</td><td>${status}</td><td>${remark}</td></tr>`;
         }),
         '</tbody>',
       ].join('');
       document.getElementById('results-table').innerHTML = tableHtml;
       document.getElementById('result-message').innerHTML = failed === 0
-        ? `<div class="success">Sent to ${success} targets.</div>`
-        : `<div class="error">Success ${success}, failed ${failed}.</div>`;
+        ? `<div class="success">已發送給 ${success} 個對象。</div>`
+        : `<div class="error">成功 ${success}，失敗 ${failed}。</div>`;
       resultSection.hidden = false;
     }
 

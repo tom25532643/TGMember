@@ -1,42 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>TGMember - Members</title>
+  <title>TGMember - 成員 / 登入金鑰</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
 </head>
 <body>
   <div class="topbar">
-    <h1>Members / Login Keys</h1>
+    <h1>成員 / 登入金鑰</h1>
     <div class="topbar-actions">
-      <button class="secondary" onclick="window.location.href = 'index.html'">Back to Home</button>
+      <button class="secondary" onclick="window.location.href = 'index.html'">回首頁</button>
     </div>
   </div>
 
   <main class="container">
     <section class="panel">
-      <h2>Create Member</h2>
+      <h2>建立成員</h2>
       <form id="create-member-form">
-        <input id="member-name" type="text" placeholder="Name" required />
-        <input id="member-username" type="text" placeholder="Login Key (optional, auto-generated if blank)" />
-        <button id="generate-member-key" type="button">Generate</button>
-        <button class="primary" type="submit">Create</button>
+        <input id="member-name" type="text" placeholder="名稱" required />
+        <input id="member-username" type="text" placeholder="登入金鑰（留空會自動產生）" />
+        <button id="generate-member-key" type="button">產生金鑰</button>
+        <button class="primary" type="submit">建立</button>
       </form>
-      <div class="muted">Leave Login Key blank and Create will auto-generate one.</div>
+      <div class="muted">登入金鑰留空時，系統會在建立成員時自動產生。</div>
       <div id="create-member-message"></div>
     </section>
 
     <section class="panel">
-      <h2>Members</h2>
+      <h2>成員列表</h2>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>ID</th>
-              <th>Name</th>
-              <th>Login Key</th>
-              <th>Action</th>
+              <th>名稱</th>
+              <th>登入金鑰</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody id="members-table-body"></tbody>

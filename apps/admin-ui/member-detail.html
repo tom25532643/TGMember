@@ -1,33 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>TGMember - Member Detail</title>
+  <title>TGMember - 成員詳細資料</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
 </head>
 <body>
   <div class="topbar">
-    <h1>Member Detail</h1>
+    <h1>成員詳細資料</h1>
     <div class="topbar-actions">
-      <button class="secondary" onclick="window.location.href = 'members.html'">Back to Members</button>
+      <button class="secondary" onclick="window.location.href = 'members.html'">回成員列表</button>
     </div>
   </div>
 
   <main class="container">
     <section class="panel">
-      <h2>Profile</h2>
+      <h2>基本資料</h2>
       <div id="member-basic"></div>
       <div id="member-error" class="error"></div>
     </section>
 
     <section class="panel">
-      <h2>Login Key</h2>
-      <p class="muted">Give this key to the user. They can also change it from PWA settings after login.</p>
+      <h2>登入金鑰</h2>
+      <p class="muted">請把這組金鑰提供給使用者。使用者登入後，也可以在 PWA 設定中自行修改。</p>
       <form id="login-key-form">
-        <input id="login-key-input" type="text" placeholder="Login Key" required />
-        <button id="generate-login-key" type="button">Generate</button>
-        <button class="primary" type="submit">Update Login Key</button>
+        <input id="login-key-input" type="text" placeholder="登入金鑰" required />
+        <button id="generate-login-key" type="button">產生金鑰</button>
+        <button class="primary" type="submit">更新登入金鑰</button>
       </form>
       <div id="login-key-message"></div>
     </section>

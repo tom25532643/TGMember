@@ -1,4 +1,4 @@
-const membersTableBody = document.getElementById("members-table-body");
+﻿const membersTableBody = document.getElementById("members-table-body");
 const membersError = document.getElementById("members-error");
 const createMemberForm = document.getElementById("create-member-form");
 const createMemberMessage = document.getElementById("create-member-message");
@@ -53,10 +53,10 @@ function renderMembers(members) {
       <td>
         <form class="login-key-form" data-member-id="${member.id}">
           <input name="loginKey" type="text" value="${escapeHtml(member.username)}" required />
-          <button type="submit">Update</button>
+          <button type="submit">更新</button>
         </form>
       </td>
-      <td><a href="./member-detail.html?id=${member.id}">View</a></td>
+      <td><a href="./member-detail.html?id=${member.id}">檢視</a></td>
     `;
     membersTableBody.appendChild(tr);
   }
@@ -68,7 +68,7 @@ async function loadMembers() {
     const members = await backendApi.getMembers();
     renderMembers(members);
   } catch (error) {
-    membersError.textContent = `Failed to load members: ${error.message}`;
+    membersError.textContent = `成員載入失敗：${error.message}`;
   }
 }
 
@@ -94,11 +94,11 @@ createMemberForm.addEventListener("submit", async (event) => {
 
   try {
     await backendApi.createMember(payload);
-    setMessage(createMemberMessage, "Member created. Give this Login Key to the user.", "success");
+    setMessage(createMemberMessage, "成員已建立，請把這組登入金鑰提供給使用者。", "success");
     createMemberForm.reset();
     await loadMembers();
   } catch (error) {
-    setMessage(createMemberMessage, `Failed to create member: ${error.message}`, "error");
+    setMessage(createMemberMessage, `建立成員失敗：${error.message}`, "error");
   }
 });
 
@@ -115,11 +115,11 @@ membersTableBody.addEventListener("submit", async (event) => {
   try {
     await backendApi.updateMemberLoginKey(memberId, loginKey);
     membersError.className = "success";
-    membersError.textContent = "Login Key updated.";
+    membersError.textContent = "登入金鑰已更新。";
     await loadMembers();
   } catch (error) {
     membersError.className = "error";
-    membersError.textContent = `Failed to update Login Key: ${error.message}`;
+    membersError.textContent = `更新登入金鑰失敗：${error.message}`;
   }
 });
 

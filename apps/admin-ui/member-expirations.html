@@ -1,14 +1,14 @@
-<!doctype html>
-<html lang="zh-TW">
+﻿<!doctype html>
+<html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TGMember - 私群成員管理</title>
+    <title>TGMember - 成員效期</title>
     <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
   </head>
   <body>
     <div class="topbar">
-      <h1>私群成員管理</h1>
+      <h1>成員效期</h1>
       <div class="topbar-actions">
         <button class="secondary" id="backBtn">回首頁</button>
       </div>
@@ -18,31 +18,31 @@
       <section class="panel">
         <div class="toolbar">
           <label>
-            TDLib User ID
-            <input id="userIdInput" type="text" placeholder="例：1" />
+            TDLib 使用者 ID
+            <input id="userIdInput" type="text" placeholder="例如：1" />
           </label>
           <label>
             讀取頁數
             <input id="maxPagesInput" type="number" min="1" max="50" value="10" />
           </label>
-          <button class="primary" id="loadGroupsBtn">載入可管理私群</button>
-          <button class="secondary" id="refreshMembersBtn" disabled>重新整理成員</button>
+          <button class="primary" id="loadGroupsBtn">載入可管理群組</button>
+          <button class="secondary" id="refreshMembersBtn" disabled>重新同步成員</button>
         </div>
         <div id="messageBox" class="message"></div>
       </section>
 
       <div class="layout">
         <section class="panel">
-          <h2>可管理私群</h2>
+          <h2>可管理群組</h2>
           <div id="groupList" class="group-list">
-            <div class="empty">尚未載入私群</div>
+            <div class="empty">尚未載入群組</div>
           </div>
         </section>
 
         <section class="panel">
           <h2 id="memberTitle">成員</h2>
           <div class="filters spaced-bottom">
-            <input id="searchInput" type="search" placeholder="搜尋名稱、username、user id" />
+            <input id="searchInput" type="search" placeholder="搜尋名稱、username 或 user id" />
             <select id="statusFilter">
               <option value="all">全部狀態</option>
               <option value="unset">未設定</option>
@@ -51,13 +51,13 @@
               <option value="forever">永久</option>
             </select>
             <select id="pageSizeSelect">
-              <option value="20">每頁 20</option>
-              <option value="50">每頁 50</option>
-              <option value="100">每頁 100</option>
+              <option value="20">每頁 20 筆</option>
+              <option value="50">每頁 50 筆</option>
+              <option value="100">每頁 100 筆</option>
             </select>
           </div>
 
-          <div id="summary" class="muted spaced-bottom">請先選擇私群</div>
+          <div id="summary" class="muted spaced-bottom">請先選擇群組</div>
           <div id="tableWrap"><div class="empty">尚未載入成員</div></div>
           <div class="pagination spaced-top">
             <button class="secondary" id="prevPageBtn">上一頁</button>

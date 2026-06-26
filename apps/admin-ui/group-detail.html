@@ -1,32 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>TGMember - Group Detail</title>
+  <title>TGMember - 群組詳細資料</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
 </head>
 <body>
   <div class="topbar">
-    <h1>Group Detail</h1>
+    <h1>群組詳細資料</h1>
     <div class="topbar-actions">
-      <button class="secondary" onclick="window.location.href = 'index.html'">Back to Home</button>
+      <button class="secondary" onclick="window.location.href = 'index.html'">回首頁</button>
     </div>
   </div>
 
   <main class="container">
     <section class="panel">
-      <h2>Profile</h2>
+      <h2>基本資料</h2>
       <div id="group-basic"></div>
       <div id="group-error" class="error"></div>
     </section>
 
     <section class="panel">
-      <h2>Members</h2>
+      <h2>成員</h2>
       <ul id="group-members-list"></ul>
       <form id="add-member-form">
-        <input id="member-id-input" type="number" placeholder="Member ID" required />
-        <button class="primary" type="submit">Add Member</button>
+        <input id="member-id-input" type="number" placeholder="成員 ID" required />
+        <button class="primary" type="submit">加入成員</button>
       </form>
       <div id="add-member-message"></div>
     </section>
@@ -51,7 +51,7 @@
       if (!members.length) {
         const li = document.createElement("li");
         li.className = "muted";
-        li.textContent = "No members";
+        li.textContent = "目前沒有成員";
         groupMembersList.appendChild(li);
         return;
       }
@@ -65,7 +65,7 @@
 
     async function loadGroup() {
       if (!groupId) {
-        groupError.textContent = "Missing group id.";
+        groupError.textContent = "缺少群組 ID。";
         return;
       }
 
@@ -76,16 +76,16 @@
         const group = groups.find(g => String(g.id) === String(groupId));
 
         if (!group) {
-          groupError.textContent = "Group not found.";
+          groupError.textContent = "找不到群組。";
           return;
         }
 
         groupBasic.innerHTML = `
-          <p><strong>ID:</strong> ${group.id}</p>
-          <p><strong>Name:</strong> ${group.name}</p>
+          <p><strong>ID：</strong> ${group.id}</p>
+          <p><strong>名稱：</strong> ${group.name}</p>
         `;
       } catch (error) {
-        groupError.textContent = `Failed to load group: ${error.message}`;
+        groupError.textContent = `群組載入失敗：${error.message}`;
       }
     }
 
@@ -94,7 +94,7 @@
         const members = await getGroupMembers(groupId);
         renderMembers(members);
       } catch (error) {
-        addMemberMessage.textContent = `Failed to load group members: ${error.message}`;
+        addMemberMessage.textContent = `群組成員載入失敗：${error.message}`;
         addMemberMessage.className = "error";
       }
     }
@@ -107,11 +107,11 @@
       try {
         await addMemberToGroup(groupId, memberIdInput.value);
         addMemberForm.reset();
-        addMemberMessage.textContent = "Member added to group.";
+        addMemberMessage.textContent = "成員已加入群組。";
         addMemberMessage.className = "success";
         await loadGroupMembers();
       } catch (error) {
-        addMemberMessage.textContent = `Failed to add member: ${error.message}`;
+        addMemberMessage.textContent = `加入成員失敗：${error.message}`;
         addMemberMessage.className = "error";
       }
     });

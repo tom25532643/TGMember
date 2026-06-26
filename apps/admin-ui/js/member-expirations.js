@@ -1,4 +1,4 @@
-const FOREVER_DATE = "2099-12-31";
+﻿const FOREVER_DATE = "2099-12-31";
 
 const state = {
   groups: [],
@@ -53,9 +53,7 @@ nextPageBtn.addEventListener("click", () => {
 
 function init() {
   const userId = localStorage.getItem("user_id");
-  if (userId) {
-    userIdInput.value = userId;
-  }
+  if (userId) userIdInput.value = userId;
 }
 
 function setMessage(text, type = "info") {
@@ -87,9 +85,7 @@ function addMonths(months) {
   const date = new Date();
   const day = date.getDate();
   date.setMonth(date.getMonth() + months);
-  if (date.getDate() !== day) {
-    date.setDate(0);
-  }
+  if (date.getDate() !== day) date.setDate(0);
   return date.toISOString().slice(0, 10);
 }
 
@@ -102,9 +98,10 @@ function getStatus(record) {
 
 function statusText(status) {
   return {
+    all: "全部",
     unset: "未設定",
     active: "有效",
-    expired: "已到期",
+    expired: "已過期",
     forever: "永久",
   }[status] || status;
 }
@@ -120,18 +117,18 @@ function escapeHtml(value) {
 
 function renderGroups() {
   if (!state.groups.length) {
-    groupList.innerHTML = '<div class="empty">沒有找到你可管理的 supergroup</div>';
+    groupList.innerHTML = '<div class="empty">沒有可管理的 supergroup 或頻道。</div>';
     return;
   }
 
   groupList.innerHTML = state.groups.map((group) => {
     const active = state.selectedGroup?.chat_id === group.chat_id ? " active" : "";
-    const type = group.is_channel ? "Channel" : "Group";
+    const type = group.is_channel ? "頻道" : "群組";
     return `
-      <div class="group-item${active}" data-chat-id="${group.chat_id}">
+      <div class="group-item${active}" data-chat-id="${escapeHtml(group.chat_id)}">
         <div class="group-title">${escapeHtml(group.title || group.chat_id)}</div>
         <div class="meta">${type} · ${escapeHtml(group.my_status || "admin")}</div>
-        <div class="meta">${group.chat_id}</div>
+        <div class="meta">${escapeHtml(group.chat_id)}</div>
       </div>
     `;
   }).join("");
@@ -149,9 +146,7 @@ function renderGroups() {
 
 function matchesStatusFilter(status, filter) {
   if (filter === "all") return true;
-  if (filter === "active") {
-    return status === "active" || status === "forever";
-  }
+  if (filter === "active") return status === "active" || status === "forever";
   return status === filter;
 }
 
@@ -162,11 +157,9 @@ function filteredMembers() {
   return state.members.filter((member) => {
     const record = state.records.get(String(member.user_id));
     const status = getStatus(record);
-    const haystack = [
-      member.display_name,
-      member.username,
-      member.user_id,
-    ].join(" ").toLowerCase();
+    const haystack = [member.display_name, member.username, member.user_id]
+      .join(" ")
+      .toLowerCase();
 
     return (!query || haystack.includes(query)) && matchesStatusFilter(status, filter);
   });
@@ -174,8 +167,8 @@ function filteredMembers() {
 
 function renderMembers() {
   if (!state.selectedGroup) {
-    tableWrap.innerHTML = '<div class="empty">尚未選擇私群</div>';
-    summary.textContent = "請先選擇私群";
+    tableWrap.innerHTML = '<div class="empty">請先選擇群組</div>';
+    summary.textContent = "請先選擇群組";
     pageText.textContent = "第 1 / 1 頁";
     return;
   }
@@ -188,13 +181,13 @@ function renderMembers() {
   const pageMembers = members.slice(start, start + pageSize);
 
   memberTitle.textContent = `成員 - ${state.selectedGroup.title || state.selectedGroup.chat_id}`;
-  summary.textContent = `共 ${state.members.length} 位成員，符合條件 ${members.length} 位。加入時間目前顯示為未知。`;
+  summary.textContent = `共 ${state.members.length} 位成員，篩選後 ${members.length} 位。加入時間目前無法取得。`;
   pageText.textContent = `第 ${state.page} / ${totalPages} 頁`;
   prevPageBtn.disabled = state.page <= 1;
   nextPageBtn.disabled = state.page >= totalPages;
 
   if (!pageMembers.length) {
-    tableWrap.innerHTML = '<div class="empty">沒有符合條件的成員</div>';
+    tableWrap.innerHTML = '<div class="empty">沒有符合篩選條件的成員。</div>';
     return;
   }
 
@@ -226,7 +219,7 @@ function renderMembers() {
 function renderMemberRow(member) {
   const record = state.records.get(String(member.user_id));
   const status = getStatus(record);
-  const username = member.username ? `@${member.username}` : "無 username";
+  const username = member.username ? `@${member.username}` : "沒有 username";
   const expiration = record?.expiration_date || "未設定";
 
   return `
@@ -235,16 +228,16 @@ function renderMemberRow(member) {
         <div class="member-name">${escapeHtml(member.display_name || member.user_id)}</div>
         <div class="muted">${escapeHtml(username)}</div>
       </td>
-      <td>${member.user_id}</td>
+      <td>${escapeHtml(member.user_id)}</td>
       <td>未知</td>
       <td>${escapeHtml(expiration)}</td>
       <td><span class="status ${status}">${statusText(status)}</span></td>
       <td>
         <div class="actions">
-          <button class="secondary" data-user-id="${member.user_id}" data-action="one-month">一個月</button>
-          <button class="secondary" data-user-id="${member.user_id}" data-action="three-months">三個月</button>
-          <button class="secondary" data-user-id="${member.user_id}" data-action="forever">永久</button>
-          <button class="danger" data-user-id="${member.user_id}" data-action="clear">清除</button>
+          <button class="secondary" data-user-id="${escapeHtml(member.user_id)}" data-action="one-month">1 個月</button>
+          <button class="secondary" data-user-id="${escapeHtml(member.user_id)}" data-action="three-months">3 個月</button>
+          <button class="secondary" data-user-id="${escapeHtml(member.user_id)}" data-action="forever">永久</button>
+          <button class="danger" data-user-id="${escapeHtml(member.user_id)}" data-action="clear">清除</button>
         </div>
       </td>
     </tr>
@@ -254,7 +247,7 @@ function renderMemberRow(member) {
 async function loadGroups() {
   const userId = getUserId();
   if (!userId) {
-    setMessage("請輸入 TDLib 使用者 ID", "error");
+    setMessage("請輸入 TDLib 使用者 ID。", "error");
     return;
   }
 
@@ -270,9 +263,9 @@ async function loadGroups() {
     refreshMembersBtn.disabled = true;
     renderGroups();
     renderMembers();
-    setMessage(`已載入 ${state.groups.length} 個可管理私群`);
+    setMessage(`已載入 ${state.groups.length} 個可管理群組。`);
   } catch (error) {
-    setMessage(`載入私群失敗：${error.message}`, "error");
+    setMessage(`載入群組失敗：${error.message}`, "error");
   } finally {
     loadGroupsBtn.disabled = false;
   }
@@ -302,7 +295,7 @@ async function loadSelectedGroupMembers() {
     state.page = 1;
     refreshMembersBtn.disabled = false;
     renderMembers();
-    setMessage(`已同步 ${members.length} 位成員`);
+    setMessage(`已同步 ${members.length} 位成員。`);
   } catch (error) {
     setMessage(`同步成員失敗：${error.message}`, "error");
   } finally {
@@ -331,9 +324,9 @@ async function updateExpiration(userId, action) {
     );
     state.records.set(String(record.telegram_user_id), record);
     renderMembers();
-    setMessage("到期日已更新");
+    setMessage("效期已更新。");
   } catch (error) {
-    setMessage(`更新到期日失敗：${error.message}`, "error");
+    setMessage(`更新效期失敗：${error.message}`, "error");
   }
 }
 

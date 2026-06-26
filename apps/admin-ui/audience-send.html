@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,87 +16,85 @@
 
   <main class="container">
     <section class="panel">
-      <h2>操作說明</h2>
-      <p class="section-desc">輸入 User ID 後載入群組或頻道，選擇來源並預覽 members，再發送訊息。</p>
-      <div class="hint-box">
-        目前流程會先載入來源清單，再讀取 members。若後端 send API 尚未完成，發送時會顯示提示，不會影響名單預覽。
-      </div>
+      <h2>使用說明</h2>
+      <p class="section-desc">輸入 User ID 後，可以載入此帳號可見的群組或頻道，再讀取成員並發送訊息。</p>
+      <div class="hint-box">此功能會依照目前 TDLib session 執行，請確認該帳號具備讀取成員與發送訊息的權限。</div>
     </section>
 
     <section class="panel">
-      <h2>來源與發送設定</h2>
+      <h2>選擇群組與成員</h2>
       <div id="error-message"></div>
       <div id="page-message"></div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="userId">User ID</label>
-          <input type="number" id="userId" placeholder="例：1" />
-          <div class="helper-text">對應登入 TDLib session 使用的 user_id。</div>
-          <label for="sendMaxCount">本次最多發送人數</label>
+          <input type="number" id="userId" placeholder="例如：1" />
+          <div class="helper-text">請輸入已建立 TDLib session 的 user_id。</div>
+          <label for="sendMaxCount">最多發送人數</label>
           <input type="number" id="sendMaxCount" min="1" max="200" value="10" />
         </div>
 
         <div class="form-group">
-          <label for="chatId">來源 Chat ID</label>
-          <input type="number" id="chatId" placeholder="例：-1002130882552" />
-          <div class="helper-text">可手動輸入，或從下方清單點選自動帶入。</div>
+          <label for="chatId">群組 Chat ID</label>
+          <input type="number" id="chatId" placeholder="例如：-1002130882552" />
+          <div class="helper-text">可手動輸入，或從左側群組清單選擇。</div>
         </div>
 
         <div class="form-group">
           <label for="maxPages">讀取頁數</label>
           <input type="number" id="maxPages" min="1" max="50" value="10" />
-          <div class="helper-text">每頁最多 200 筆，先用 10 測試即可。</div>
+          <div class="helper-text">每頁最多 200 位成員，預設讀取 10 頁。</div>
         </div>
       </div>
 
       <div class="layout">
         <div>
           <div class="btn-row spaced-bottom">
-            <button class="secondary" id="loadSourcesBtn">載入來源</button>
-            <button class="secondary" id="loadMembersBtn">載入 Members</button>
+            <button class="secondary" id="loadSourcesBtn">載入群組</button>
+            <button class="secondary" id="loadMembersBtn">載入成員</button>
           </div>
           <div class="source-list" id="sourceList">
-            <div class="placeholder">尚未載入來源</div>
+            <div class="placeholder">尚未載入群組</div>
           </div>
         </div>
 
         <div>
           <div class="stats">
-            <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Members</div></div>
+            <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">成員</div></div>
             <div class="stat"><div class="stat-value" id="stat-pages">0</div><div class="stat-label">頁數</div></div>
-            <div class="stat"><div class="stat-value" id="stat-source-type">-</div><div class="stat-label">來源類型</div></div>
+            <div class="stat"><div class="stat-value" id="stat-source-type">-</div><div class="stat-label">聊天室型態</div></div>
           </div>
           <div class="info" id="memberInfoBox" hidden></div>
           <div class="member-list" id="memberList">
-            <div class="placeholder">請先選擇來源並載入 members</div>
+            <div class="placeholder">請選擇群組後載入成員</div>
           </div>
         </div>
       </div>
     </section>
 
     <section class="panel">
-      <h2>訊息內容</h2>
-      <p class="composer-note">輸入要發送給 members 的訊息內容。</p>
+      <h2>發送訊息</h2>
+      <p class="composer-note">輸入要發送給成員的訊息內容。</p>
       <div class="form-group">
-        <label for="messageText">發送內容</label>
-        <textarea id="messageText" placeholder="輸入要發送的訊息"></textarea>
+        <label for="messageText">訊息內容</label>
+        <textarea id="messageText" placeholder="請輸入要發送的訊息"></textarea>
       </div>
       <div class="btn-row">
-        <button class="warning" id="sendMembersBtn">發送給 Members</button>
+        <button class="warning" id="sendMembersBtn">發送給成員</button>
       </div>
-      <div id="send-note" class="helper-text compact-top">若後端 send API 尚未完成，按下按鈕會先提示你。</div>
+      <div id="send-note" class="helper-text compact-top">送出後會顯示發送進度與結果紀錄。</div>
 
       <div class="progress-wrap" id="sendProgressBox">
-        <div id="sendStatusText">尚未開始</div>
+        <div id="sendStatusText">等待發送</div>
         <div class="progress-bar"><div id="sendProgressFill" class="progress-fill"></div></div>
         <div class="stats">
-          <div class="stat"><div class="stat-value" id="send-current">0</div><div class="stat-label">Current</div></div>
-          <div class="stat"><div class="stat-value" id="send-total">0</div><div class="stat-label">Total</div></div>
-          <div class="stat"><div class="stat-value" id="send-success">0</div><div class="stat-label">Success</div></div>
-          <div class="stat"><div class="stat-value" id="send-failed">0</div><div class="stat-label">Failed</div></div>
+          <div class="stat"><div class="stat-value" id="send-current">0</div><div class="stat-label">目前</div></div>
+          <div class="stat"><div class="stat-value" id="send-total">0</div><div class="stat-label">總數</div></div>
+          <div class="stat"><div class="stat-value" id="send-success">0</div><div class="stat-label">成功</div></div>
+          <div class="stat"><div class="stat-value" id="send-failed">0</div><div class="stat-label">失敗</div></div>
         </div>
-        <div id="sendLog"><div class="placeholder">Waiting for send results...</div></div>
+        <div id="sendLog"><div class="placeholder">等待發送結果...</div></div>
       </div>
     </section>
   </main>

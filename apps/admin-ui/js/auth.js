@@ -40,11 +40,11 @@ function setBusy(nextBusy) {
   document.querySelectorAll("button").forEach((button) => {
     button.disabled = nextBusy;
   });
-  setText("status", nextBusy ? "Checking..." : "");
+  setText("status", nextBusy ? "檢查中..." : "");
 }
 
 function showError(message) {
-  setText("error", message || "Something went wrong.");
+  setText("error", message || "發生錯誤，請稍後再試。");
 }
 
 function clearError() {
@@ -57,8 +57,8 @@ function showMember(member) {
     return;
   }
 
-  const username = member.username ? `@${member.username}` : "no username";
-  setText("memberSummary", `${member.name || "Member"} (${username}) - user_id ${member.id}`);
+  const username = member.username ? `@${member.username}` : "沒有 username";
+  setText("memberSummary", `${member.name || "成員"} (${username}) - user_id ${member.id}`);
 }
 
 function goHome(userId) {
@@ -115,7 +115,7 @@ async function resolveLogin() {
   const loginKey = getLoginKey();
 
   if (!loginKey) {
-    showError("Enter a login key.");
+    showError("請輸入登入金鑰。");
     return;
   }
 
@@ -128,7 +128,7 @@ async function resolveLogin() {
     if (!member) {
       currentUserId = "";
       showMember(null);
-      showError("No such account. Please contact the developer.");
+      showError("找不到帳號，請聯絡管理者。");
       setScreen("login");
       return;
     }
@@ -145,7 +145,7 @@ async function resolveLogin() {
       await applyAuthState(currentUserId);
     }
   } catch (err) {
-    showError(err.message || "Login failed.");
+    showError(err.message || "登入失敗。");
   } finally {
     setBusy(false);
   }
@@ -161,7 +161,7 @@ async function submitPhone() {
     await tdlibApi.submitPhone(currentUserId, qs("phone").value.trim());
     await applyAuthState(currentUserId);
   } catch (err) {
-    showError(err.message || "Phone submit failed.");
+    showError(err.message || "手機號碼送出失敗。");
     setScreen("phone");
   } finally {
     setBusy(false);
@@ -178,7 +178,7 @@ async function submitCode() {
     await tdlibApi.submitCode(currentUserId, qs("code").value.trim());
     await applyAuthState(currentUserId);
   } catch (err) {
-    showError(err.message || "Code submit failed.");
+    showError(err.message || "驗證碼送出失敗。");
     setScreen("code");
   } finally {
     setBusy(false);
@@ -195,7 +195,7 @@ async function submitPassword() {
     await tdlibApi.submitPassword(currentUserId, qs("password").value);
     await applyAuthState(currentUserId);
   } catch (err) {
-    showError(err.message || "Password submit failed.");
+    showError(err.message || "密碼送出失敗。");
     setScreen("password");
   } finally {
     setBusy(false);

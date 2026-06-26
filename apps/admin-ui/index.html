@@ -1,51 +1,51 @@
-<!doctype html>
-<html lang="en">
+﻿<!doctype html>
+<html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TGMember Admin</title>
+    <title>TGMember 管理後台</title>
     <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
   </head>
   <body>
     <div class="topbar">
-      <h1>TGMember Admin</h1>
-      <button id="logoutBtn" class="secondary">Logout</button>
+      <h1>TGMember 管理後台</h1>
+      <button id="logoutBtn" class="secondary">登出</button>
     </div>
 
     <main class="container">
       <section class="panel">
-        <h2>Session</h2>
+        <h2>登入狀態</h2>
         <div class="stats">
           <div class="stat">
-            <div class="stat-label">User ID</div>
+            <div class="stat-label">使用者 ID</div>
             <div class="stat-value" id="userIdText">-</div>
           </div>
           <div class="stat">
-            <div class="stat-label">Auth State</div>
+            <div class="stat-label">授權狀態</div>
             <div class="stat-value" id="authStateText">-</div>
           </div>
         </div>
       </section>
 
       <section class="panel">
-        <h2>Tools</h2>
+        <h2>功能</h2>
         <div class="btn-row">
-          <button class="primary" onclick="window.location.href = 'members.html'">Members / Login Keys</button>
-          <button onclick="window.location.href = 'chat.html'">Open Chat</button>
-          <button onclick="window.location.href = 'folder-send.html'">Box Send</button>
-          <button onclick="window.location.href = 'audience-send.html'">Group Send</button>
-          <button onclick="window.location.href = 'member-expirations.html'">Member Expirations</button>
+          <button class="primary" onclick="window.location.href = 'members.html'">成員 / 登入金鑰</button>
+          <button onclick="window.location.href = 'chat.html'">聊天室</button>
+          <button onclick="window.location.href = 'folder-send.html'">盒子發送</button>
+          <button onclick="window.location.href = 'audience-send.html'">名單發送</button>
+          <button onclick="window.location.href = 'member-expirations.html'">成員效期</button>
         </div>
       </section>
 
       <section class="panel">
-        <h2>Members</h2>
-        <pre id="membersBox">Loading...</pre>
+        <h2>成員</h2>
+        <pre id="membersBox">載入中...</pre>
       </section>
 
       <section class="panel">
-        <h2>Groups</h2>
-        <pre id="groupsBox">Loading...</pre>
+        <h2>群組</h2>
+        <pre id="groupsBox">載入中...</pre>
       </section>
     </main>
 

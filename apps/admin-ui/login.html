@@ -1,14 +1,14 @@
-<!doctype html>
-<html lang="en">
+﻿<!doctype html>
+<html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
+    <title>TGMember - 登入</title>
     <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-4" />
-</head>
+  </head>
   <body>
     <main class="login-shell">
-      <h2>Telegram Login</h2>
+      <h2>Telegram 登入</h2>
 
       <p id="memberSummary" class="muted"></p>
       <p id="status" class="muted" role="status"></p>
@@ -16,37 +16,37 @@
 
       <section id="loginPanel">
         <form id="loginForm">
-          <label for="loginKey">Login Key</label>
-          <input id="loginKey" autocomplete="username" placeholder="Login Key" />
-          <button type="submit">Continue</button>
+          <label for="loginKey">登入金鑰</label>
+          <input id="loginKey" autocomplete="username" placeholder="登入金鑰" />
+          <button type="submit">繼續</button>
         </form>
       </section>
 
       <section id="phonePanel" hidden>
         <form id="phoneForm">
-          <label for="phone">Phone Number</label>
+          <label for="phone">手機號碼</label>
           <input id="phone" autocomplete="tel" placeholder="+886..." />
-          <button type="submit">Submit Phone</button>
+          <button type="submit">送出手機號碼</button>
         </form>
-        <button type="button" data-back-login>Use Another Account</button>
+        <button type="button" data-back-login>使用其他帳號</button>
       </section>
 
       <section id="codePanel" hidden>
         <form id="codeForm">
-          <label for="code">Telegram Code</label>
+          <label for="code">Telegram 驗證碼</label>
           <input id="code" inputmode="numeric" autocomplete="one-time-code" />
-          <button type="submit">Submit Code</button>
+          <button type="submit">送出驗證碼</button>
         </form>
-        <button type="button" data-back-login>Use Another Account</button>
+        <button type="button" data-back-login>使用其他帳號</button>
       </section>
 
       <section id="passwordPanel" hidden>
         <form id="passwordForm">
-          <label for="password">Two-Step Password</label>
+          <label for="password">兩步驟密碼</label>
           <input id="password" type="password" autocomplete="current-password" />
-          <button type="submit">Submit Password</button>
+          <button type="submit">送出密碼</button>
         </form>
-        <button type="button" data-back-login>Use Another Account</button>
+        <button type="button" data-back-login>使用其他帳號</button>
       </section>
     </main>
 

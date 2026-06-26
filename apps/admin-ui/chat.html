@@ -1,17 +1,17 @@
-<!doctype html>
-<html lang="en">
+﻿<!doctype html>
+<html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TGMember - Chat</title>
+    <title>TGMember - 聊天室</title>
     <link rel="stylesheet" href="css/app.css?v=20260624-admin-style-6" />
   </head>
   <body class="chat-page">
     <div class="topbar">
-      <h1>Chat</h1>
+      <h1>聊天室</h1>
       <div class="topbar-actions">
-        <span class="inline-meta"><strong>User ID:</strong> <span id="userIdText"></span></span>
-        <button id="backBtn" class="secondary">Back</button>
+        <span class="inline-meta"><strong>使用者 ID：</strong> <span id="userIdText"></span></span>
+        <button id="backBtn" class="secondary">返回</button>
       </div>
     </div>
 
@@ -19,23 +19,23 @@
       <aside class="sidebar">
         <div id="chatList"></div>
         <div class="load-more-wrap">
-          <button id="loadMoreChatsBtn" class="load-more-btn">Load More Chats</button>
+          <button id="loadMoreChatsBtn" class="load-more-btn">載入更多聊天室</button>
           <div id="chatCountText" class="chat-count-text"></div>
         </div>
       </aside>
 
       <main class="main">
         <div class="chat-header">
-          <strong id="chatTitle">Select a chat</strong>
+          <strong id="chatTitle">請選擇聊天室</strong>
         </div>
 
         <div id="messageBox" class="messages">
-          <div class="empty">Select a chat</div>
+          <div class="empty">請選擇聊天室</div>
         </div>
 
         <div class="composer">
-          <input id="messageInput" placeholder="Type message..." />
-          <button id="sendBtn" class="primary">Send</button>
+          <input id="messageInput" placeholder="輸入訊息..." />
+          <button id="sendBtn" class="primary">送出</button>
         </div>
       </main>
     </div>
